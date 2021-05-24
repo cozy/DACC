@@ -1,15 +1,17 @@
-import os
-
-basedir = os.path.abspath(os.path.dirname(__file__))
+import yaml
+import sys
 
 
 class Config(object):
 
-    DB_NAME = os.environ.get('DB_NAME') or 'dacc'
-    DB_USER = os.environ.get('DB_USER') or 'paul'
-    DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'paul'
-    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
-    DB_PORT = os.environ.get('DB_PORT') or '5432'
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{}:{}@{}:{}/{}'.format(DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME)
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+    try:
+        with open("config.yml", "r") as config:
+            cfg = yaml.load(config, Loader=yaml.FullLoader)
+            db = cfg["database"]
+            SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}:{}/{}".format(
+                db["user"], db["password"], db["host"], db["port"], db["name"])
+            SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    except Exception as err:
+        print("Error while opening config.yaml: " + repr(err))
+        sys.exit()

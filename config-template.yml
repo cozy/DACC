@@ -1,0 +1,6 @@
+database:
+    host: 'localhost'
+    port: '5423'
+    name: 'dacc'
+    user: 'dacc'
+    password: 'Secr3tP4ssw0rd'
