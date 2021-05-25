@@ -2,5 +2,5 @@ __pycache__
 .DS_store
 .vscode
 .cache
-env/
+venv/
 config.yml

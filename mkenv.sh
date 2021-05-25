@@ -2,8 +2,7 @@
 
 if [ ! -d venv ]; then
 	echo "Installing virtual env"
-	mkdir venv
-	virtualenv -p python3 venv
+  python3 -m venv venv 
 	source venv/bin/activate
 	pip3 install -r requirements.txt
 else
