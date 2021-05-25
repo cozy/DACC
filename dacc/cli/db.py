@@ -1,5 +1,5 @@
 import click
-from dacc import dacc, db
+from dacc import dacc, db, aggregation
 from dacc.fixtures import fixtures
 
 
@@ -29,9 +29,13 @@ def insert_fixtures_definition():
     fixtures.insert_fixtures_measures_definition()
 
 
-@dacc.cli.command("insert-fixtures-measures")
+@dacc.cli.command("insert-random-measures")
 @click.option('-n', default=1, show_default=True)
 def insert_fixtures(n):
-    """Insert fixtures in database"""
+    """Insert random measures in database"""
 
-    fixtures.insert_raw_measures(n)
+    fixtures.insert_random_raw_measures(n_measures):
+
+
+    
+
