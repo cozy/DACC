@@ -1,19 +1,19 @@
 [
     {
         "name": "connection-count-daily",
-        "aggregation_period": "day",
-        "group1_key": "device"
+        "aggregationPeriod": "day",
+        "group1Key": "device"
     },
     {
         "name": "konnector-event-daily",
-        "aggregation_period": "day",
-        "group1_key": "slug",
-        "group2_key": "event_type",
-        "group3_key": "status"
+        "aggregationPeriod": "day",
+        "group1Key": "slug",
+        "group2Key": "event_type",
+        "group3Key": "status"
     },
     {
         "name": "energy-consumption-daily",
-        "aggregation_period": "day",
-        "group1_key": "energy_type"
+        "aggregationPeriod": "day",
+        "group1Key": "energy_type"
     }
 ]

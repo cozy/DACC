@@ -28,13 +28,13 @@ def insert_raw_measure(measure):
 def insert_measure_definition(definition):
     d = MeasuresDefinition(
         name=definition.get("name"),
-        created_by=definition.get("created_by"),
+        created_by=definition.get("createdBy"),
         description=definition.get("description"),
         aggregation_period=definition.get("aggregationPeriod"),
         contribution_threshold=definition.get("contributionThreshold"),
-        group1_key=definition.get("group1_key"),
-        group2_key=definition.get("group2_key"),
-        group3_key=definition.get("group3_key")
+        group1_key=definition.get("group1Key"),
+        group2_key=definition.get("group2Key"),
+        group3_key=definition.get("group3Key")
     )
     db.session.add(d)
     db.session.commit()
