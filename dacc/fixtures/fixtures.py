@@ -1,7 +1,8 @@
 import json
 import random
 import os
-from dacc import models
+from sqlalchemy.sql import text
+from dacc import models, db
 from dacc import insertion
 
 APPS = ["ecolyo", "drive", "banks", "pass"]
@@ -43,12 +44,11 @@ def generate_groups(measure_definition):
     return (group1, group2, group3)
 
 
-def insert_raw_measures(n_measures):
+def insert_random_raw_measures(n_measures):
     try:
         defs = models.MeasuresDefinition.query.all()
         for i in range(n_measures):
             random_def = random.choice(defs)
-            print("random def : {}".format(random_def))
             group1, group2, group3 = generate_groups(random_def)
             measure = {
                 "measureName": random_def.name,
@@ -66,5 +66,17 @@ def insert_raw_measures(n_measures):
 
             insertion.insert_raw_measure(measure)
             print("Raw measure inserted : {}".format(measure))
+    except Exception as e:
+        print("Exception during fixture insertion: " + repr(e))
+
+def insert_raw_measures_from_file():
+    try:
+        file_path = os.path.join(
+            os.path.dirname(__file__), "raw_measures.sql")
+        with open(file_path, 'r') as f:
+            query = text(f.read())
+            print("Insert raw_measures...")
+            print(query)
+            db.session.execute(query)
     except Exception as e:
         print("Exception during fixture insertion: " + repr(e))
