@@ -14,6 +14,18 @@ class RawMeasures(db.Model):
     group3 = db.Column(JSONB)
     is_aggregated = db.Column(db.Boolean)
 
+    def query_by_name(measure_name):
+        return db.session \
+            .query(
+                RawMeasures.created_by,
+                RawMeasures.start_date,
+                RawMeasures.group1,
+                RawMeasures.group2,
+                RawMeasures.group3,
+                RawMeasures.value) \
+            .filter(RawMeasures.measure_name == measure_name) \
+            .all()
+
 class MeasuresDefinition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True)
