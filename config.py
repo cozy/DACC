@@ -1,22 +1,122 @@
 import yaml
 import sys
 import os
+from os import path as osp
+
 
 class Config(object):
-    try:
-        with open("config.yml", "r") as config:
-            cfg = yaml.load(config, Loader=yaml.FullLoader)
-            
-            env = cfg["env"]
-            if os.environ.get("TESTING"):
-                env = "test"
-            db = cfg["envs"][env]["database"]
-            SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}:{}/{}".format(
-                db["user"], db["password"], db["host"], db["port"], db["name"])
-            SQLALCHEMY_TRACK_MODIFICATIONS = False
+    def _parse_yaml_error(self, exc):
+        print("Error while parsing YAML config file:")
+        if hasattr(exc, "problem_mark"):
+            if exc.context is not None:
+                print(
+                    "  parser says\n"
+                    + "  {}\n".format(str(exc.problem_mark))
+                    + "  {} {}\n".format(exc.problem, exc.context)
+                    + "  Please correct data and retry."
+                )
+            else:
+                print(
+                    "  parser says\n"
+                    + "  {}\n".format(str(exc.problem_mark))
+                    + "  {}\n".format(str(exc.problem))
+                    + "  Please correct data and retry."
+                )
+        else:
+            print("Something went wrong while parsing yaml file")
 
+    def _read_config(self, filename):
+        try:
+            with open(filename, "r") as f:
+                read_config = yaml.load(f.read(), yaml.SafeLoader)
+        except yaml.YAMLError as e:
+            self._parse_yaml_error(e)
+            raise e
+        except IOError as e:
+            print("Error while opening config file: {}".format(e))
+            raise e
+        return read_config
 
-    except Exception as err:
-        print("Error while opening config.yaml: " + repr(err))
-        sys.exit()
+    def __init__(
+        self,
+        config_dir=None,
+        config_file="config.yml",
+    ):
 
+        # Look for config file
+        default_config_dirs = [  # Where to look for config file
+            osp.dirname(osp.realpath(__file__)),
+            "/etc/dacc",
+        ]
+
+        if config_dir is not None:
+            # Look for config file in given directory
+            if not osp.isfile(osp.join(config_dir, config_file)):
+                raise ValueError(
+                    "Config file not found in {}".format(
+                        osp.join(config_dir, config_file)
+                    )
+                )
+        else:
+            # Look for config file in default directories
+            try:
+                config_dir = next(
+                    dirname
+                    for dirname in default_config_dirs
+                    if osp.isfile(osp.join(dirname, config_file))
+                )
+            except StopIteration:
+                raise ValueError(
+                    "No {} config file could be found."
+                    " Tried: {}".format(config_file, ", ".join(default_config_dirs))
+                )
+
+        # Load config file
+        config_fullpath = osp.join(config_dir, config_file)
+        if not osp.isfile(config_fullpath):
+            raise ValueError("config file not found: {}".format(config_fullpath))
+        self._config = self._read_config(config_fullpath)
+
+        # Validate config
+        if os.environ.get("TESTING"):
+            # Force env to test if we are inside unit tests regardless of
+            # configured env in config file
+            env = "test"
+        else:
+            env = self.get("env")
+        if env is None:
+            raise ValueError('"env" value is missing from config')
+        if env not in self.get("envs"):
+            raise ValueError("Env {} not found in config".format(env))
+        db = self.get("envs:{}:database".format(env))
+        if not isinstance(db, dict):
+            raise ValueError("database config should be a dict")
+        for key in ["user", "password", "host", "port", "dbname"]:
+            if key not in db:
+                raise ValueError(
+                    "Missing critical database parameter {} in env {} DB config".format(
+                        key, env
+                    )
+                )
+
+        # Set flask config variables
+        self.SQLALCHEMY_DATABASE_URI = (
+            "postgresql://{user}:{password}@{host}:{port}/{database}".format(
+                user=db.get("user"),
+                password=db.get("password"),
+                host=db.get("host"),
+                port=db.get("port"),
+                database=db.get("dbname"),
+            )
+        )
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    def get(self, key, default=None):
+        """This method allows you to search a config value by its path
+        using `:` as namespace delimiter
+        """
+        keys = key.split(":")
+        search_base = self._config
+        for searchkey in keys[:-1]:
+            search_base = search_base.get(searchkey, {})
+        return search_base.get(keys[-1], default)
