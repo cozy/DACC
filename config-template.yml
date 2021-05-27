@@ -1,23 +1,23 @@
 env: dev
 envs:
-    prod:
-        database:
-            host: 'localhost'
-            port: '5432'
-            name: 'dacc'
-            user: 'dacc'
-            password: 'Secr3tP4ssw0rd'
-    dev: 
-        database:
-            host: 'localhost'
-            port: '5432'
-            name: 'dacc-dev'
-            user: 'dacc'
-            password: 'Secr3tP4ssw0rd'
-    test: 
-        database:
-            host: 'localhost'
-            port: '5432'
-            name: 'dacc-test'
-            user: 'dacc'
-            password: 'Secr3tP4ssw0rd'
+  prod:
+    database:
+      host: 'localhost'
+      port: '5432'
+      dbname: 'dacc'
+      user: 'dacc'
+      password: 'Secr3tP4ssw0rd'
+  dev:
+    database:
+      host: 'localhost'
+      port: '5432'
+      dbname: 'dacc-dev'
+      user: 'dacc'
+      password: 'Secr3tP4ssw0rd'
+  test:
+    database:
+      host: 'localhost'
+      port: '5432'
+      dbname: 'dacc-test'
+      user: 'dacc'
+      password: 'Secr3tP4ssw0rd'
