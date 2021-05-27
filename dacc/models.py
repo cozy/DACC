@@ -1,5 +1,8 @@
 from dacc import db
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 
 class RawMeasures(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -14,6 +17,7 @@ class RawMeasures(db.Model):
     group3 = db.Column(JSONB)
     is_aggregated = db.Column(db.Boolean)
 
+    # TODO: indexing on last_updated might be good
     def query_by_name(measure_name):
         return db.session \
             .query(
@@ -24,6 +28,18 @@ class RawMeasures(db.Model):
                 RawMeasures.group3,
                 RawMeasures.value) \
             .filter(RawMeasures.measure_name == measure_name) \
+            .order_by(RawMeasures.last_updated) \
+            .all()
+
+
+    def query_most_recent_date(measure_name, from_date):
+        return db.session \
+            .query(RawMeasures.last_updated) \
+            .filter(
+                RawMeasures.measure_name == measure_name,
+                RawMeasures.last_updated > from_date) \
+            .order_by(RawMeasures.last_updated.desc()) \
+            .limit(1) \
             .all()
 
 
@@ -41,6 +57,14 @@ class MeasuresDefinition(db.Model):
     aggregation_dates = relationship(
         "AggregationDates", uselist=False, back_populates="measures_definition")
 
+    def query_by_name(name):
+        return db.session \
+            .query(MeasuresDefinition) \
+            .filter(MeasuresDefinition.name == name)
+            .all()
+
+    def query_all_names():
+        return db.session.query(MeasuresDefinition.name).all()
 
 
 class AggregationDates(db.Model):

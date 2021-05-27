@@ -24,7 +24,7 @@ def test_aggregations():
     measure_names = query_all_measures_name()
     for measure_name in measure_names:
         aggregated_rows = aggregation.query_measures_to_aggregate_by_name(
-            measure_name)
+            measure_name, None, None)
 
         raw_measures = RawMeasures.query_by_name(measure_name)
 
@@ -51,3 +51,7 @@ def test_aggregations():
             assert aggregated_rows[i].min == mins.value[i]
             assert aggregated_rows[i].max == maxs.value[i]
             assert aggregated_rows[i].avg == avgs.value[i]
+
+
+def test_aggregate_raw_measures():
+    aggregation.aggregate_raw_measures('connection-count-daily')
