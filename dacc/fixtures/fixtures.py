@@ -8,19 +8,6 @@ from dacc import insertion
 APPS = ["ecolyo", "drive", "banks", "pass"]
 
 
-def insert_fixtures_measures_definition():
-    try:
-        file_path = os.path.join(
-            os.path.dirname(__file__), "measures_def.json")
-        with open(file_path, 'r') as f:
-            definitions = json.load(f)
-            for d in definitions:
-                insertion.insert_measure_definition(d)
-                print("Measure definition inserted: {}".format(d))
-    except Exception as e:
-        print("Exception during fixture insertion: " + repr(e))
-
-
 def generate_groups(measure_definition):
     group1 = None
     group2 = None
@@ -69,14 +56,23 @@ def insert_random_raw_measures(n_measures):
     except Exception as e:
         print("Exception during fixture insertion: " + repr(e))
 
-def insert_raw_measures_from_file():
+
+def insert_from_fixture(file_name):
     try:
         file_path = os.path.join(
-            os.path.dirname(__file__), "raw_measures.sql")
+            os.path.dirname(__file__), file_name)
         with open(file_path, 'r') as f:
             query = text(f.read())
-            print("Insert raw_measures...")
+            print("Insert from fixture...")
             print(query)
             db.session.execute(query)
     except Exception as e:
         print("Exception during fixture insertion: " + repr(e))
+
+
+def insert_raw_measures_from_file():
+    insert_from_fixture("raw_measures.sql")
+
+
+def insert_measures_definition_from_file():
+    insert_from_fixture("measures_definition.sql")

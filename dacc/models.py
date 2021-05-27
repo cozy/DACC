@@ -26,10 +26,11 @@ class RawMeasures(db.Model):
             .filter(RawMeasures.measure_name == measure_name) \
             .all()
 
+
 class MeasuresDefinition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True)
-    org = db.Column(db.String(550))
+    org = db.Column(db.String(50))
     created_by = db.Column(db.String(100))
     group1_key = db.Column(db.String(100))
     group2_key = db.Column(db.String(100))
