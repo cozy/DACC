@@ -38,6 +38,26 @@ class MeasuresDefinition(db.Model):
     description = db.Column(db.String)
     aggregation_period = db.Column(db.String(50))
     contribution_threshold = db.Column(db.Integer)
+    aggregation_dates = relationship(
+        "AggregationDates", uselist=False, back_populates="measures_definition")
+
+
+
+class AggregationDates(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    measures_definition_id = db.Column(
+        db.Integer, db.ForeignKey('measures_definition.id'))
+    last_aggregated_measure_date = db.Column(db.TIMESTAMP)
+    measures_definition = relationship(
+        "MeasuresDefinition", back_populates="aggregation_dates")
+
+    def query_last_date_by_name(measure_name):
+        return db.session \
+            .query(AggregationDates.last_aggregated_measure_date) \
+            .join(MeasuresDefinition.aggregation_dates) \
+            .filter(MeasuresDefinition.name == measure_name) \
+            .limit(1) \
+            .all()
 
 
 class Aggregation(db.Model):
