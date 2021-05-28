@@ -29,3 +29,7 @@ Then, edit `config.yml` to suit your needs.
 source venv/bin/activate
 flask run
 ```
+
+## Healthchecks
+
+You can query the `/status` route to get health checks result
