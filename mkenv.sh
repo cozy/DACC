@@ -1,7 +1,10 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: $0 [-h/--help] [-r/--rebuild] [-u/--update]"
+  echo "Usage: $0 [-h/--help] [-r/--rebuild] [-u/--update] [VENV_DIR]"
+  echo ""
+  echo "Positional prameter:"
+  echo "	VENV_DIR		Directory in which creating virtual env (venv by default)"
   echo ""
   echo "Options:"
   echo "	-h / --help		Print usage message and exit"
@@ -10,9 +13,9 @@ usage() {
 }
 
 install_venv() {
-  source "${1}/venv/bin/activate"
+  source "${1}/bin/activate"
   pip install wheel
-  pip install -r "${1}/requirements.txt"
+  pip install -r "${2}/requirements.txt"
 }
 
 MYDIR=$(dirname $0)
@@ -52,18 +55,24 @@ while true; do
   esac
 done
 
-if ${REBUILD}; then
-  echo "Removing old venv"
-  rm -rf "${MYDIR}/venv"
+if [ -n "${1}" ]; then
+  VENVDIR="${1}"
+else
+  VENVDIR="${MYDIR}/venv"
 fi
 
-if [ ! -d venv ]; then
+if ${REBUILD}; then
+  echo "Removing old venv"
+  rm -rf "${VENVDIR}"
+fi
+
+if [ ! -d "${VENVDIR}" ]; then
   echo "Creating virtual env"
-  python3 -m venv "${MYDIR}/venv"
-  install_venv "${MYDIR}"
+  python3 -m venv "${VENVDIR}"
+  install_venv "${VENVDIR}" "${MYDIR}"
 elif ${UPDATE}; then
   echo "Updating existing virtual env"
-  install_venv "${MYDIR}"
+  install_venv "${VENVDIR}" "${MYDIR}"
 else
   echo "Virtual env already exist, nothing to do"
 fi
