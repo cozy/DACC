@@ -30,12 +30,8 @@ def insert_fixtures_definition():
 
 
 @dacc.cli.command("insert-random-measures")
-@click.option('-n', default=1, show_default=True)
+@click.option("-n", default=1, show_default=True)
 def insert_fixtures(n):
     """Insert random measures in database"""
 
-    fixtures.insert_random_raw_measures(n_measures):
-
-
-    
-
+    fixtures.insert_random_raw_measures(n_measures)

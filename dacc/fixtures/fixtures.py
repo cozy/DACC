@@ -42,7 +42,7 @@ def insert_random_raw_measures(n_measures):
                 "value": random.randint(0, 100),
                 "startDate": "2020-05-01",
                 "createdByApp": random.choice(APPS),
-                "groups": []
+                "groups": [],
             }
             if group1:
                 measure["groups"].append(group1)
@@ -59,9 +59,8 @@ def insert_random_raw_measures(n_measures):
 
 def insert_from_fixture(file_name):
     try:
-        file_path = os.path.join(
-            os.path.dirname(__file__), file_name)
-        with open(file_path, 'r') as f:
+        file_path = os.path.join(os.path.dirname(__file__), file_name)
+        with open(file_path, "r") as f:
             query = text(f.read())
             print("Insert from fixture...")
             print(query)
