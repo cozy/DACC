@@ -12,3 +12,4 @@ def init():
     db.create_all()
 
     fixtures.insert_raw_measures_from_file()
+    fixtures.insert_measures_definition_from_file()
