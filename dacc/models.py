@@ -19,28 +19,31 @@ class RawMeasures(db.Model):
 
     # TODO: indexing on last_updated might be good
     def query_by_name(measure_name):
-        return db.session \
-            .query(
+        return (
+            db.session.query(
                 RawMeasures.created_by,
                 RawMeasures.start_date,
                 RawMeasures.group1,
                 RawMeasures.group2,
                 RawMeasures.group3,
-                RawMeasures.value) \
-            .filter(RawMeasures.measure_name == measure_name) \
-            .order_by(RawMeasures.last_updated) \
+                RawMeasures.value,
+            )
+            .filter(RawMeasures.measure_name == measure_name)
+            .order_by(RawMeasures.last_updated)
             .all()
-
+        )
 
     def query_most_recent_date(measure_name, from_date):
-        return db.session \
-            .query(RawMeasures.last_updated) \
+        return (
+            db.session.query(RawMeasures.last_updated)
             .filter(
                 RawMeasures.measure_name == measure_name,
-                RawMeasures.last_updated > from_date) \
-            .order_by(RawMeasures.last_updated.desc()) \
-            .limit(1) \
+                RawMeasures.last_updated > from_date,
+            )
+            .order_by(RawMeasures.last_updated.desc())
+            .limit(1)
             .all()
+        )
 
 
 class MeasuresDefinition(db.Model):
@@ -55,13 +58,15 @@ class MeasuresDefinition(db.Model):
     aggregation_period = db.Column(db.String(50))
     contribution_threshold = db.Column(db.Integer)
     aggregation_dates = relationship(
-        "AggregationDates", uselist=False, back_populates="measures_definition")
+        "AggregationDates", uselist=False, back_populates="measures_definition"
+    )
 
     def query_by_name(name):
-        return db.session \
-            .query(MeasuresDefinition) \
+        return (
+            db.session.query(MeasuresDefinition)
             .filter(MeasuresDefinition.name == name)
             .all()
+        )
 
     def query_all_names():
         return db.session.query(MeasuresDefinition.name).all()
@@ -70,18 +75,21 @@ class MeasuresDefinition(db.Model):
 class AggregationDates(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measures_definition_id = db.Column(
-        db.Integer, db.ForeignKey('measures_definition.id'))
+        db.Integer, db.ForeignKey("measures_definition.id")
+    )
     last_aggregated_measure_date = db.Column(db.TIMESTAMP)
     measures_definition = relationship(
-        "MeasuresDefinition", back_populates="aggregation_dates")
+        "MeasuresDefinition", back_populates="aggregation_dates"
+    )
 
     def query_last_date_by_name(measure_name):
-        return db.session \
-            .query(AggregationDates.last_aggregated_measure_date) \
-            .join(MeasuresDefinition.aggregation_dates) \
-            .filter(MeasuresDefinition.name == measure_name) \
-            .limit(1) \
+        return (
+            db.session.query(AggregationDates.last_aggregated_measure_date)
+            .join(MeasuresDefinition.aggregation_dates)
+            .filter(MeasuresDefinition.name == measure_name)
+            .limit(1)
             .all()
+        )
 
 
 class Aggregation(db.Model):

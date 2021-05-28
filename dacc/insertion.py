@@ -4,10 +4,16 @@ from dacc import db
 
 def insert_raw_measure(measure):
     group1 = measure["groups"][0] if "groups" in measure else None
-    group2 = measure["groups"][1] if "groups" in measure and len(
-        measure["groups"]) > 1 else None
-    group3 = measure["groups"][2] if "groups" in measure and len(
-        measure["groups"]) > 2 else None
+    group2 = (
+        measure["groups"][1]
+        if "groups" in measure and len(measure["groups"]) > 1
+        else None
+    )
+    group3 = (
+        measure["groups"][2]
+        if "groups" in measure and len(measure["groups"]) > 2
+        else None
+    )
 
     m = RawMeasures(
         measure_name=measure.get("measureName"),
@@ -18,7 +24,7 @@ def insert_raw_measure(measure):
         group1=group1,
         group2=group2,
         group3=group3,
-        is_aggregated=False
+        is_aggregated=False,
     )
     db.session.add(m)
     db.session.commit()
@@ -34,7 +40,7 @@ def insert_measure_definition(definition):
         contribution_threshold=definition.get("contributionThreshold"),
         group1_key=definition.get("group1Key"),
         group2_key=definition.get("group2Key"),
-        group3_key=definition.get("group3Key")
+        group3_key=definition.get("group3Key"),
     )
     db.session.add(d)
     db.session.commit()

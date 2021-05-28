@@ -10,13 +10,13 @@ def query_all_measures_name():
 
 
 def convert_columns(df_raw):
-    if 'group1' in df_raw:
-        df_raw = df_raw.astype({'group1': 'str'})
-    if 'group2' in df_raw:
-        df_raw = df_raw.astype({'group2': 'str'})
-    if 'group3' in df_raw:
-        df_raw = df_raw.astype({'group3': 'str'})
-    df_raw = df_raw.astype({'value': 'float'})
+    if "group1" in df_raw:
+        df_raw = df_raw.astype({"group1": "str"})
+    if "group2" in df_raw:
+        df_raw = df_raw.astype({"group2": "str"})
+    if "group3" in df_raw:
+        df_raw = df_raw.astype({"group3": "str"})
+    df_raw = df_raw.astype({"value": "float"})
     return df_raw
 
 
@@ -24,16 +24,26 @@ def test_aggregations():
     measure_names = query_all_measures_name()
     for measure_name in measure_names:
         aggregated_rows = aggregation.query_measures_to_aggregate_by_name(
-            measure_name, None, None)
+            measure_name, None, None
+        )
 
         raw_measures = RawMeasures.query_by_name(measure_name)
 
-        df_raw = pd.DataFrame(data=raw_measures, columns=[
-                              "created_by", "start_date", "group1", "group2", "group3",  "value"])
+        df_raw = pd.DataFrame(
+            data=raw_measures,
+            columns=[
+                "created_by",
+                "start_date",
+                "group1",
+                "group2",
+                "group3",
+                "value",
+            ],
+        )
 
         #  Remove null columns
-        columns = (df_raw.columns[df_raw.notna().any()].tolist())
-        df_raw = df_raw.dropna(axis='columns')
+        columns = df_raw.columns[df_raw.notna().any()].tolist()
+        df_raw = df_raw.dropna(axis="columns")
 
         df_raw = convert_columns(df_raw)
         columns.remove("value")  #  Remove value column to group by
@@ -54,4 +64,4 @@ def test_aggregations():
 
 
 def test_aggregate_raw_measures():
-    aggregation.aggregate_raw_measures('connection-count-daily')
+    aggregation.aggregate_raw_measures("connection-count-daily")
