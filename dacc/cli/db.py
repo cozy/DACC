@@ -1,5 +1,5 @@
 import click
-from dacc import dacc, db, aggregation
+from dacc import dacc, db
 from dacc.fixtures import fixtures
 
 
