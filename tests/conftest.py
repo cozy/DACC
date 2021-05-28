@@ -1,7 +1,5 @@
 import pytest
-import os
-
-from dacc import dacc, db
+from dacc import db
 from dacc.fixtures import fixtures
 
 
@@ -12,3 +10,5 @@ def init():
 
     fixtures.insert_raw_measures_from_file()
     fixtures.insert_measures_definition_from_file()
+
+    db.session.commit()
