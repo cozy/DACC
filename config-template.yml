@@ -1,26 +1,9 @@
-env: dev
+database:
+  host: 'localhost'
+  port: '5432'
+  dbname: 'dacc'
+  user: 'dacc'
+  password: 'Secr3tP4ssw0rd'
 sentry:
   dsn: https://6fca9ff7c68944438d0c9799d19fcef2@errors.cozycloud.cc/5
   traces_sample_rate: 1.0
-envs:
-  prod:
-    database:
-      host: 'localhost'
-      port: '5432'
-      dbname: 'dacc'
-      user: 'dacc'
-      password: 'Secr3tP4ssw0rd'
-  dev:
-    database:
-      host: 'localhost'
-      port: '5432'
-      dbname: 'dacc-dev'
-      user: 'dacc'
-      password: 'Secr3tP4ssw0rd'
-  test:
-    database:
-      host: 'localhost'
-      port: '5432'
-      dbname: 'dacc-test'
-      user: 'dacc'
-      password: 'Secr3tP4ssw0rd'

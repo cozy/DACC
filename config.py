@@ -68,45 +68,39 @@ class Config(object):
             except StopIteration:
                 raise ValueError(
                     "No {} config file could be found."
-                    " Tried: {}".format(config_file, ", ".join(default_config_dirs))
+                    " Tried: {}".format(
+                        config_file, ", ".join(default_config_dirs)
+                    )
                 )
 
         # Load config file
         config_fullpath = osp.join(config_dir, config_file)
         if not osp.isfile(config_fullpath):
-            raise ValueError("config file not found: {}".format(config_fullpath))
+            raise ValueError(
+                "config file not found: {}".format(config_fullpath)
+            )
         self._config = self._read_config(config_fullpath)
 
         # Validate config
-        if os.environ.get("TESTING"):
-            # Force env to test if we are inside unit tests regardless of
-            # configured env in config file
-            env = "test"
-        else:
-            env = self.get("env")
-        if env is None:
-            raise ValueError('"env" value is missing from config')
-        if env not in self.get("envs"):
-            raise ValueError("Env {} not found in config".format(env))
-        db = self.get("envs:{}:database".format(env))
-        if not isinstance(db, dict):
+        db_config = self.get("database")
+        if not isinstance(db_config, dict):
             raise ValueError("database config should be a dict")
-        for key in ["user", "password", "host", "port", "dbname"]:
-            if key not in db:
+        for key in ["host", "port", "dbname", "user", "password"]:
+            if key not in db_config:
                 raise ValueError(
-                    "Missing critical database parameter {} in env {} DB config".format(
-                        key, env
+                    "Missing critical database parameter {} in DB config".format(
+                        key
                     )
                 )
 
         # Set flask config variables
         self.SQLALCHEMY_DATABASE_URI = (
             "postgresql://{user}:{password}@{host}:{port}/{database}".format(
-                user=db.get("user"),
-                password=db.get("password"),
-                host=db.get("host"),
-                port=db.get("port"),
-                database=db.get("dbname"),
+                user=db_config.get("user"),
+                password=db_config.get("password"),
+                host=db_config.get("host"),
+                port=db_config.get("port"),
+                database=db_config.get("dbname"),
             )
         )
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
