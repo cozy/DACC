@@ -103,6 +103,10 @@ def aggregate_raw_measures(measure_name):
                 average=m.avg,
             )
             db.session.add(agg)
-            db.session.commit()
+
+        agg_date = get_new_aggregation_date(measure_name, end_date)
+        db.session.add(agg_date)
+        db.session.commit()
+
     except Exception as err:
         print("Error while aggregating: " + repr(err))
