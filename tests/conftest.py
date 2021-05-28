@@ -1,7 +1,6 @@
 import pytest
 import os
 
-os.environ["TESTING"] = "True"
 from dacc import dacc, db
 from dacc.fixtures import fixtures
 
