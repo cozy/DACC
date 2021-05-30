@@ -197,3 +197,6 @@ Thumbs.db
 
 # Config files not to be packaged
 config.yml
+
+# Docker volumes
+volumes/
