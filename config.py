@@ -1,6 +1,4 @@
 import yaml
-import sys
-import os
 from os import path as osp
 
 

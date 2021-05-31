@@ -1,7 +1,8 @@
 from dacc import db, aggregation
-from dacc.models import RawMeasures
+from dacc.models import RawMeasures, AggregationDates
 import pandas as pd
 from sqlalchemy import distinct
+from datetime import datetime
 
 
 def query_all_measures_name():
@@ -63,5 +64,57 @@ def test_aggregations():
             assert aggregated_rows[i].avg == avgs.value[i]
 
 
-def test_aggregate_raw_measures():
-    aggregation.aggregate_raw_measures("connection-count-daily")
+def test_time_interval():
+    # The indicator does not exist
+    start_date, end_date = aggregation.find_time_interval("wrong-measure")
+    assert start_date is None
+    assert end_date is None
+
+    # No raw measure for this indicator
+    start_date, end_date = aggregation.find_time_interval(
+        "energy-consumption-daily"
+    )
+    assert start_date is None
+    assert end_date is None
+
+    # Raw measures exist but no aggregation date
+    start_date, end_date = aggregation.find_time_interval(
+        "connection-count-daily"
+    )
+    assert start_date == datetime.min
+    assert end_date == datetime(2021, 5, 3, 0, 0, 0, 4000)
+
+    # Raw measures exist with aggregation date
+    m_date = datetime(2021, 5, 1, 0, 0, 0, 0)
+    agg_date = AggregationDates(
+        measures_definition_id=1,
+        last_aggregated_measure_date=m_date,
+    )
+    db.session.add(agg_date)
+    start_date, end_date = aggregation.find_time_interval(
+        "connection-count-daily"
+    )
+    assert start_date == m_date
+    assert end_date == datetime(2021, 5, 3, 0, 0, 0, 4000)
+
+    db.session.rollback()
+
+
+def test_new_aggregation_date():
+    agg_date = aggregation.get_new_aggregation_date("wrong-measure", None)
+    assert agg_date is None
+
+    date = datetime(2021, 5, 1, 0, 0, 0, 0)
+    agg_date = aggregation.get_new_aggregation_date(
+        "connection-count-daily", date
+    )
+    assert agg_date.measures_definition_id == 1
+    assert agg_date.last_aggregated_measure_date == date
+
+    db.session.add(agg_date)
+    date = datetime(2021, 5, 2, 0, 0, 0, 0)
+    agg_date = aggregation.get_new_aggregation_date(
+        "connection-count-daily", date
+    )
+    assert agg_date.measures_definition_id == 1
+    assert agg_date.last_aggregated_measure_date == date
