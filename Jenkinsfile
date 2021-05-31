@@ -7,7 +7,7 @@ pipeline {
   options {
     disableConcurrentBuilds()
     gitLabConnection('https://gitlab.cozycloud.cc')
-    gitlabBuilds(builds: ["Build", "Test", "Deploy"])
+    gitlabBuilds(builds: ["Build", "Test"])
   }
 
   stages {
@@ -56,14 +56,21 @@ pipeline {
 
     stage ('Deploy') {
       steps {
-        gitlabCommitStatus("Deploy") {
-          echo 'Deploying....'
-          dir('sandbox/') {
-            sh '''
-              ssh -o StrictHostkeyChecking=no jenkins@dacc-01-dev hostname -f
-              ssh -o StrictHostkeyChecking=no jenkins@dacc-01-dev sudo /usr/local/sbin/deploy-dacc-branch.sh master
-            '''
+      script {
+        if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
+          gitlabCommitStatus("Deploy") {
+            echo 'Deploying....'
+            dir('sandbox/') {
+              sh '''
+                ssh -o StrictHostkeyChecking=no jenkins@dacc-01-dev hostname -f
+                ssh -o StrictHostkeyChecking=no jenkins@dacc-01-dev sudo /usr/local/sbin/deploy-dacc-branch.sh master
+              '''
+            }
           }
+        } else {
+          sh '''
+          echo "No deploy on merge requests or non-master branches"
+          '''
         }
       }
     }
