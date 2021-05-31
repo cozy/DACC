@@ -16,7 +16,6 @@ pipeline {
       steps {
         gitlabCommitStatus("Build") {
           echo 'Building....'
-          mattermostSend(color: "warning", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**: <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> triggered by ${env.gitlabUserName}")
           sh "sudo rm -rf sandbox"
           deleteDir()
           dir('sandbox/') {
@@ -56,6 +55,7 @@ pipeline {
 
     stage ('Deploy') {
       steps {
+        mattermostSend(color: "warning", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**: <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> triggered by ${env.gitlabUserName}")
         script {
           if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
             gitlabCommitStatus("Deploy") {
@@ -78,13 +78,13 @@ pipeline {
   }
   post {
     failure {
-      mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC build, test & deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
+      mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC build, test & deploy on **dev** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
     }
     success {
-      mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
     }
     aborted {
-      mattermostSend(color: "#000000", channel: "feat---dacc", message: "DACC build, test & deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
+      mattermostSend(color: "#000000", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
     }
     cleanup {
       dir('sandbox/') {
