@@ -7,6 +7,7 @@ from dacc.models import (
 from dacc import db
 from sqlalchemy import func
 from datetime import datetime
+from copy import copy
 
 
 def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
@@ -21,8 +22,8 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
             RawMeasures.group1,
             RawMeasures.group2,
             RawMeasures.group3,
-            func.sum(RawMeasures.value).label("sum"),
             func.count(RawMeasures.value).label("count"),
+            func.sum(RawMeasures.value).label("sum"),
             func.min(RawMeasures.value).label("min"),
             func.max(RawMeasures.value).label("max"),
             func.avg(RawMeasures.value).label("avg"),
@@ -74,6 +75,32 @@ def find_time_interval(measure_name):
     return start_date, end_date
 
 
+def compute_partial_aggregates(current_agg, new_agg):
+    if current_agg.measure_name != new_agg.measure_name:
+        raise Exception(
+            "Cannot compute aggregation on different measures: {} - {}".format(
+                current_agg.measure_name, new_agg.measure_name
+            )
+        )
+    if current_agg.start_date != new_agg.start_date:
+        raise Exception(
+            "Cannot compute aggregation on different dates: {} - {}".format(
+                current_agg.start_date, new_agg.start_date
+            )
+        )
+
+    agg = copy(current_agg)
+    agg.count += new_agg.count
+    agg.sum += new_agg.sum
+    agg.max = max(agg.max, new_agg.max)
+    agg.min = min(agg.min, new_agg.min)
+    agg.avg = (
+        agg.avg * current_agg.count + new_agg.avg * new_agg.count
+    ) / agg.count
+
+    return agg
+
+
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
@@ -87,22 +114,27 @@ def aggregate_raw_measures(measure_name):
         grouped_measures = query_measures_to_aggregate_by_name(
             measure_name, start_date, end_date
         )
-        for m in grouped_measures:
-            # TODO: check if tuple already exist
-            agg = Aggregation(
-                measure_name=measure_name,
-                start_date=m.start_date,
-                created_by=m.created_by,
-                group1=m.group1,
-                group2=m.group2,
-                group3=m.group3,
-                sum=m.sum,
-                count=m.count,
-                min=m.min,
-                max=m.max,
-                average=m.avg,
-            )
-            db.session.add(agg)
+        for gm in grouped_measures:
+            agg = Aggregation.query_aggregate_by_measure(gm)
+            if agg is None:
+                # This will be an insert in the Aggregation table
+                agg = Aggregation(
+                    measure_name=measure_name,
+                    start_date=gm.start_date,
+                    created_by=gm.created_by,
+                    group1=gm.group1,
+                    group2=gm.group2,
+                    group3=gm.group3,
+                    sum=gm.sum,
+                    count=gm.count,
+                    min=gm.min,
+                    max=gm.max,
+                    avg=gm.avg,
+                )
+                db.session.add(agg)
+            else:
+                # This will be an update in the Aggregation table
+                agg = compute_partial_aggregates(agg, gm)
 
         agg_date = get_new_aggregation_date(measure_name, end_date)
         if agg_date is None:
