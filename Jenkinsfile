@@ -10,11 +10,6 @@ pipeline {
     gitlabBuilds(builds: ["Build", "Test", "Deploy"])
   }
 
-  environment {
-    PORT       = '5000'
-    FLASK_ENV  = 'development'
-  }
-
   stages {
 
     stage ('Build') {
@@ -27,7 +22,8 @@ pipeline {
           dir('sandbox/') {
             checkout scm
             sh '''
-              touch .env
+              echo "FLASK_ENV=development > .env"
+              echo "PORT=5000 >> .env"
               cp config-template.yml config.yml
               docker-compose -p dacc build
             '''
@@ -48,7 +44,6 @@ pipeline {
               docker exec dacc_web pytest
             '''
             sh '''
-              curl -s -i http://localhost:5000/status
               test "$(curl -s http://localhost:5000/status | jq -r .global_status)" = "ok"
             '''
           }
