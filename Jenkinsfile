@@ -34,7 +34,7 @@ pipeline {
           echo 'Testing....'
           dir('sandbox/') {
             sh "docker exec dacc_web pytest"
-            sh "test \"$(curl -s http://localhost:5000/status | jq -r .global_status)\" = \"ok\""
+            sh "test \"\$(curl -s http://localhost:5000/status | jq -r .global_status)\" = \"ok\""
           }
         }
       }
