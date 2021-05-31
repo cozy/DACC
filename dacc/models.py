@@ -41,8 +41,7 @@ class RawMeasures(db.Model):
                 RawMeasures.last_updated > from_date,
             )
             .order_by(RawMeasures.last_updated.desc())
-            .limit(1)
-            .all()
+            .first()
         )
 
 
@@ -65,7 +64,7 @@ class MeasuresDefinition(db.Model):
         return (
             db.session.query(MeasuresDefinition)
             .filter(MeasuresDefinition.name == name)
-            .all()
+            .first()
         )
 
     def query_all_names():
@@ -82,13 +81,12 @@ class AggregationDates(db.Model):
         "MeasuresDefinition", back_populates="aggregation_dates"
     )
 
-    def query_last_date_by_name(measure_name):
+    def query_by_name(measure_name):
         return (
-            db.session.query(AggregationDates.last_aggregated_measure_date)
+            db.session.query(AggregationDates)
             .join(MeasuresDefinition.aggregation_dates)
             .filter(MeasuresDefinition.name == measure_name)
-            .limit(1)
-            .all()
+            .first()
         )
 
 

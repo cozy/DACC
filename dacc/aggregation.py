@@ -1,4 +1,9 @@
-from dacc.models import RawMeasures, Aggregation, AggregationDates
+from dacc.models import (
+    RawMeasures,
+    Aggregation,
+    AggregationDates,
+    MeasuresDefinition,
+)
 from dacc import db
 from sqlalchemy import func
 from datetime import datetime
@@ -38,29 +43,52 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
     )
 
 
+def get_new_aggregation_date(measure_name, date):
+    agg_date = AggregationDates.query_by_name(measure_name)
+    if agg_date is None:
+        m_def = MeasuresDefinition.query_by_name(measure_name)
+        if m_def is None:
+            return None
+        return AggregationDates(
+            measures_definition_id=m_def.id,
+            last_aggregated_measure_date=date,
+        )
+    else:
+        agg_date.last_aggregated_measure_date = date
+        return agg_date
+
+
+def find_time_interval(measure_name):
+    agg_date = AggregationDates.query_by_name(measure_name)
+    if agg_date is None:
+        start_date = datetime.min
+    else:
+        start_date = agg_date.last_aggregated_measure_date
+
+    m_most_recent_date = RawMeasures.query_most_recent_date(
+        measure_name, start_date
+    )
+    if m_most_recent_date is None:
+        return (None, None)
+    end_date = m_most_recent_date[0]
+    return start_date, end_date
+
+
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
 def aggregate_raw_measures(measure_name):
     try:
-        agg_dates_rows = AggregationDates.query_last_date_by_name(measure_name)
-        if len(agg_dates_rows) > 0:
-            start_date = agg_dates_rows[0].last_aggregated_measure_date
-        else:
-            start_date = datetime.min
-
-        m_dates_rows = RawMeasures.query_most_recent_date(
-            measure_name, start_date
-        )
-        if len(m_dates_rows) > 0:
-            end_date = m_dates_rows[0].last_updated
-        else:
-            end_date = datetime.min
+        start_date, end_date = find_time_interval(measure_name)
+        if end_date is None:
+            # No measures to aggregate
+            return
 
         grouped_measures = query_measures_to_aggregate_by_name(
             measure_name, start_date, end_date
         )
         for m in grouped_measures:
+            # TODO: check if tuple already exist
             agg = Aggregation(
                 measure_name=measure_name,
                 start_date=m.start_date,
@@ -75,6 +103,14 @@ def aggregate_raw_measures(measure_name):
                 average=m.avg,
             )
             db.session.add(agg)
-            db.session.commit()
+
+        agg_date = get_new_aggregation_date(measure_name, end_date)
+        if agg_date is None:
+            raise Exception(
+                "No measure definition found for {}".format(measure_name)
+            )
+        db.session.add(agg_date)
+        db.session.commit()
+
     except Exception as err:
         print("Error while aggregating: " + repr(err))
