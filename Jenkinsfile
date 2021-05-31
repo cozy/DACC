@@ -22,8 +22,8 @@ pipeline {
           dir('sandbox/') {
             checkout scm
             sh '''
-              echo "FLASK_ENV=development > .env"
-              echo "PORT=5000 >> .env"
+              echo "FLASK_ENV=development" > .env
+              echo "PORT=5000" >> .env
               cp config-template.yml config.yml
               docker-compose -p dacc build
             '''
