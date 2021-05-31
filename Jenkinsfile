@@ -10,6 +10,11 @@ pipeline {
     gitlabBuilds(builds: ["Build", "Test", "Deploy"])
   }
 
+  environment {
+    PORT       = '5000'
+    FLASK_ENV  = 'development'
+  }
+
   stages {
 
     stage ('Build') {
@@ -21,7 +26,10 @@ pipeline {
           deleteDir()
           dir('sandbox/') {
             checkout scm
-            sh "docker-compose -p dacc build"
+            sh '''
+              touch .env
+              docker-compose -p dacc build
+            '''
             sh "docker-compose -p dacc up -d"
           }
         }
