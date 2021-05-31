@@ -28,6 +28,7 @@ pipeline {
             checkout scm
             sh '''
               touch .env
+              cp config-template.yml config.yml
               docker-compose -p dacc build
             '''
             sh '''
@@ -44,8 +45,6 @@ pipeline {
           echo 'Testing....'
           dir('sandbox/') {
             sh '''
-              sleep 3
-              docker container ls -a
               docker exec dacc_web pytest
             '''
             sh "test \"\$(curl -s http://localhost:5000/status | jq -r .global_status)\" = \"ok\""
