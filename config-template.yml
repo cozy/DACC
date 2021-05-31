@@ -1,5 +1,5 @@
 database:
-  host: 'localhost'
+  host: 'dacc_db'
   port: '5432'
   dbname: 'dacc'
   user: 'dacc'

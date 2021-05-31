@@ -1,0 +1,29 @@
+version: "3.1"
+
+services:
+  db:
+    container_name: dacc_db
+    image: postgres:11
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-dacc}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Secr3tP4ssw0rd}"
+      POSTGRES_DB: "${POSTGRES_DB:-dacc}"
+      PGDATA: /data/postgres
+    volumes:
+       - ./volumes/postgres:/data/postgres
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    container_name: dacc_web
+    command: flask run
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - 5000:5000
+    env_file:
+      - ./.flaskenv
+      - ./.env
+    depends_on:
+      - db

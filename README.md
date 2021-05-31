@@ -32,4 +32,80 @@ flask run
 
 ## Healthchecks
 
-You can query the `/status` route to get health checks result
+You can query the `/status` route to get health checks result:
+
+```
+$ curl -s -i http://localhost:5000/status
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 63
+Server: Werkzeug/2.0.1 Python/3.8.10
+Date: Sun, 30 May 2021 13:22:24 GMT
+
+{
+  "db": {
+    "status": "ok"
+  },
+  "global_status": "ok"
+}
+```
+
+Or If you need to only get the global status:
+
+```
+$ curl -s http://localhost:5000/status | jq -r '.global_status'
+ok
+```
+
+## Development
+
+### Build and launch docker dev environment
+
+To launch DACC application in developement environment with a dedicated PostgreSQL
+database in a docker environment:
+
+- Create `.env` development file containing
+
+```
+FLASK_ENV=development
+FLASK_RUN_HOST=0.0.0.0
+FLASK_RUN_PORT=5000
+PORT=5000
+```
+
+- Copy `config-template.yml` to `config.yml` (no need to change anything for dev)
+
+```
+$ cp config-template.yml config.yml
+```
+
+- Build app image and launch PostgreSQL and DACC
+
+```
+docker-compose up
+```
+
+The application should start in development environment with auto-reloading.
+You can also add `-d` option if you prefer to launch it in background
+
+### Execute tests
+
+To execute tests while your docker dev environment is running, simply run
+
+```
+$ docker exec dacc_web pytest
+```
+
+### Docker dev environment stop & cleanup
+
+To stop dev environment containers, run the following commands:
+
+```
+$ docker-compose down -v
+```
+
+To delete postgresql volumes, once stopped, use:
+
+```
+sudo rm -rf volumes
+```
