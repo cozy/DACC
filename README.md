@@ -109,3 +109,36 @@ To delete postgresql volumes, once stopped, use:
 ```
 sudo rm -rf volumes
 ```
+
+### Managing versions
+
+DACC uses [semantic versioning](https://semver.org/), that is versions are in the form `<major>.<minor>.<patch>`.
+
+- `<major>` is updated when there is breaking API changes
+- `<minor>` is updated on feature addition
+- `<patch>` is updated on backward-compatible bug fixes
+
+#### Releasing a new version
+
+The script `scripts/releaseversion.sh` will release a new production version:
+- Remove the `-dev` suffix to current version
+- Commit & tag production version
+- Bump to next development release (bumping `<patch>`, ready for next bugfix)
+- Commit next development release
+- Push commits & tags
+
+```
+$ ./scripts/releaseversion.sh
+```
+
+#### Updating version number
+
+Each time you introduce new features, you need to manually increase `<minor>` in version number (and reset patch to 0) and each time you introduce backward-incompatible API change, you need to bump `<major>` and reset minor and patch to 0.
+
+To manually change version, use the script `scripts/nextversion.sh`
+
+```
+$ ./scripts/nextversion.sh 1.2.3
+```
+
+This script will update version number, adding `-dev` suffix but it is your responsibility to add, commit & push the change.
