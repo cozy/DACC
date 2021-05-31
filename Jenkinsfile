@@ -43,6 +43,7 @@ pipeline {
             sh '''
               docker exec dacc_web pytest
             '''
+            sh "sleep 300"
             sh '''
               curl -i http://localhost:5000/status
               test "$(curl -s http://localhost:5000/status | jq -r .global_status)" = "ok"
