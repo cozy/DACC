@@ -44,6 +44,7 @@ pipeline {
           echo 'Testing....'
           dir('sandbox/') {
             sh '''
+              sleep 3
               docker container ls -a
               docker exec dacc_web pytest
             '''
