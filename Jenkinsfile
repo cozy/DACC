@@ -44,6 +44,7 @@ pipeline {
               docker exec dacc_web pytest
             '''
             sh '''
+              curl -i http://localhost:5000/status
               test "$(curl -s http://localhost:5000/status | jq -r .global_status)" = "ok"
             '''
           }
