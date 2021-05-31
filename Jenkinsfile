@@ -23,6 +23,8 @@ pipeline {
             checkout scm
             sh '''
               echo "FLASK_ENV=development" > .env
+              echo "FLASK_RUN_HOST=0.0.0.0" >> .env
+              echo "FLASK_PORT=5000" >> .env
               echo "PORT=5000" >> .env
               cp config-template.yml config.yml
               docker-compose -p dacc build
@@ -43,7 +45,6 @@ pipeline {
             sh '''
               docker exec dacc_web pytest
             '''
-            sh "sleep 300"
             sh '''
               curl -i http://localhost:5000/status
               test "$(curl -s http://localhost:5000/status | jq -r .global_status)" = "ok"
