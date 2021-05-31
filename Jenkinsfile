@@ -30,7 +30,9 @@ pipeline {
               touch .env
               docker-compose -p dacc build
             '''
-            sh "docker-compose -p dacc up -d"
+            sh '''
+              docker-compose -p dacc up -d
+            '''
           }
         }
       }
@@ -41,7 +43,10 @@ pipeline {
         gitlabCommitStatus("Test") {
           echo 'Testing....'
           dir('sandbox/') {
-            sh "docker exec dacc_web pytest"
+            sh '''
+              docker container ls -a
+              docker exec dacc_web pytest
+            '''
             sh "test \"\$(curl -s http://localhost:5000/status | jq -r .global_status)\" = \"ok\""
           }
         }
@@ -75,7 +80,7 @@ pipeline {
     }
     cleanup {
       dir('sandbox/') {
-        sh "docker-compose -p dacc down -v"
+        sh "docker-compose -p dacc down -v --rmi all --remove-orphans"
       }
       sh "sudo rm -rf sandbox"
       /* clean up our workspace */
