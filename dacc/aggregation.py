@@ -105,6 +105,10 @@ def aggregate_raw_measures(measure_name):
             db.session.add(agg)
 
         agg_date = get_new_aggregation_date(measure_name, end_date)
+        if agg_date is None:
+            raise Exception(
+                "No measure definition found for {}".format(measure_name)
+            )
         db.session.add(agg_date)
         db.session.commit()
 
