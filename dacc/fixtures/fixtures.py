@@ -1,11 +1,13 @@
 import json
 import random
 import os
+from dateutil.parser import parse
+from datetime import timedelta
 from sqlalchemy.sql import text
 from dacc import models, db
 from dacc import insertion
 
-APPS = ["ecolyo", "drive", "banks", "pass"]
+APPS = ["ecolyo"]
 
 
 def generate_groups(measure_definition):
@@ -31,16 +33,22 @@ def generate_groups(measure_definition):
     return (group1, group2, group3)
 
 
-def insert_random_raw_measures(n_measures):
+def insert_random_raw_measures(n_measures, n_days, starting_day):
     try:
+        starting_day = parse(starting_day)
+        days = [starting_day + timedelta(days=i) for i in range(n_days)]
         defs = models.MeasuresDefinition.query.all()
+        if not defs:
+            print("Please insert measures definition first.")
+            return
+
         for i in range(n_measures):
             random_def = random.choice(defs)
             group1, group2, group3 = generate_groups(random_def)
             measure = {
                 "measureName": random_def.name,
                 "value": random.randint(0, 100),
-                "startDate": "2020-05-01",
+                "startDate": random.choice(days),
                 "createdByApp": random.choice(APPS),
                 "groups": [],
             }
