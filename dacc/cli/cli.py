@@ -19,6 +19,23 @@ def reset_tables():
         print("Command failed: {}".format(repr(err)))
 
 
+@dacc.cli.command("reset-table")
+@click.argument("table_name")
+def reset_table(table_name):
+    """Reset a table in database"""
+
+    try:
+        click.confirm(
+            "This will remove ALL DATA in the table. Are you sure?", abort=True
+        )
+        print("Reset all tuples in table...")
+        db.session.execute("DELETE FROM {};".format(table_name))
+        db.session.commit()
+        print("Done.")
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
 @dacc.cli.command("show-table")
 @click.argument("table_name")
 def show_table(table_name):
