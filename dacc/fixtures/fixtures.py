@@ -1,4 +1,3 @@
-import json
 import random
 import os
 from dateutil.parser import parse
@@ -65,7 +64,7 @@ def insert_random_raw_measures(n_measures, n_days, starting_day):
         print("Exception during fixture insertion: " + repr(e))
 
 
-def insert_from_fixture(file_name):
+def insert_from_fixture_file(file_name):
     try:
         file_path = os.path.join(os.path.dirname(__file__), file_name)
         with open(file_path, "r") as f:
@@ -78,8 +77,12 @@ def insert_from_fixture(file_name):
 
 
 def insert_raw_measures_from_file():
-    insert_from_fixture("raw_measures.sql")
+    insert_from_fixture_file("raw_measures.sql")
 
 
 def insert_measures_definition_from_file():
-    insert_from_fixture("measures_definition.sql")
+    insert_from_fixture_file("measures_definition.sql")
+
+
+def insert_aggregation_dates_from_file():
+    insert_from_fixture_file("aggregation_dates.sql")

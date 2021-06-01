@@ -48,11 +48,17 @@ def show_table(table_name):
         print("Command failed: {}".format(repr(err)))
 
 
-@dacc.cli.command("insert-fixtures-definition")
-def insert_fixtures_definition():
-    """Insert fixtures in database"""
+@dacc.cli.command("insert-fixtures-from-file")
+@click.argument("fixture_type")
+def insert_fixtures_definition(fixture_type):
+    """Insert fixture file in database"""
 
-    fixtures.insert_measures_definition_from_file()
+    if fixture_type == "raw":
+        fixtures.insert_raw_measures_from_file()
+    elif fixture_type == "definition":
+        fixtures.insert_measures_definition_from_file()
+    elif fixture_type == "dates":
+        fixtures.insert_aggregation_dates_from_file()
     db.session.commit()
 
 
