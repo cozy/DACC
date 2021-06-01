@@ -79,4 +79,8 @@ def insert_fixtures(n_measures, days, starting_day):
 def compute_aggregation(measure_name):
     """Compute aggregation for a measure"""
 
-    aggregation.aggregate_raw_measures(measure_name)
+    agg, date = aggregation.aggregate_raw_measures(measure_name)
+    if agg is None:
+        print("No aggregation were made for {}".format(measure_name))
+    else:
+        print("{} aggregations saved until {}".format(len(agg), date))
