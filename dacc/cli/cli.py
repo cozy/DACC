@@ -1,5 +1,5 @@
 import click
-from dacc import dacc, db
+from dacc import dacc, db, aggregation
 from dacc.fixtures import fixtures
 
 
@@ -43,3 +43,11 @@ def insert_fixtures(n_measures, days, starting_day):
     """Insert random measures in database"""
 
     fixtures.insert_random_raw_measures(n_measures, days, starting_day)
+
+
+@dacc.cli.command("compute-aggregation")
+@click.argument("measure_name")
+def compute_aggregation(measure_name):
+    """Compute aggregation for a measure"""
+
+    aggregation.aggregate_raw_measures(measure_name)

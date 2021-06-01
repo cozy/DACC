@@ -115,7 +115,7 @@ def aggregate_raw_measures(measure_name):
             measure_name, start_date, end_date
         )
         for gm in grouped_measures:
-            agg = Aggregation.query_aggregate_by_measure(gm)
+            agg = Aggregation.query_aggregate_by_measure(measure_name, gm)
             if agg is None:
                 # This will be an insert in the Aggregation table
                 agg = Aggregation(
