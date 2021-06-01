@@ -55,9 +55,9 @@ pipeline {
 
     stage ('Deploy') {
       steps {
-        mattermostSend(color: "warning", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**: <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> triggered by ${env.gitlabUserName}")
         script {
           if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
+            mattermostSend(color: "warning", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**: <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> triggered by ${env.gitlabUserName}")
             gitlabCommitStatus("Deploy") {
               echo 'Deploying....'
               dir('sandbox/') {
@@ -81,7 +81,9 @@ pipeline {
       mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC build, test & deploy on **dev** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
     }
     success {
-      mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
+        mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      }
     }
     aborted {
       mattermostSend(color: "#000000", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
