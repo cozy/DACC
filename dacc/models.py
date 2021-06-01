@@ -104,5 +104,19 @@ class Aggregation(db.Model):
     count_not_zero = db.Column(db.Numeric)
     min = db.Column(db.Numeric(2))
     max = db.Column(db.Numeric(2))
-    average = db.Column(db.Numeric(2))
+    avg = db.Column(db.Numeric(2))
     std = db.Column(db.Numeric(2))
+
+    def query_aggregate_by_measure(m):
+        return (
+            db.session.query(Aggregation)
+            .filter(
+                Aggregation.measure_name == m.measure_name,
+                Aggregation.start_date == m.start_date,
+                Aggregation.created_by == m.created_by,
+                Aggregation.group1 == m.group1,
+                Aggregation.group2 == m.group2,
+                Aggregation.group3 == m.group3,
+            )
+            .first()
+        )

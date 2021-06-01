@@ -1,5 +1,6 @@
+import pytest
 from dacc import db, aggregation
-from dacc.models import RawMeasures, AggregationDates
+from dacc.models import RawMeasures, AggregationDates, Aggregation
 import pandas as pd
 from sqlalchemy import distinct
 from datetime import datetime
@@ -118,3 +119,46 @@ def test_new_aggregation_date():
     )
     assert agg_date.measures_definition_id == 1
     assert agg_date.last_aggregated_measure_date == date
+
+
+def test_compute_partial_aggregates():
+    curr_agg = Aggregation(measure_name="dummy1")
+    new_agg = Aggregation(measure_name="dummy2")
+    with pytest.raises(Exception) as e_info:
+        aggregation.compute_partial_aggregates(curr_agg, new_agg)
+    assert "Cannot compute aggregation on different measures" in str(
+        e_info.value
+    )
+
+    curr_agg = Aggregation(measure_name="dummy1", start_date="2020-05-01")
+    new_agg = Aggregation(measure_name="dummy1", start_date="2020-05-02")
+    with pytest.raises(Exception) as e_info:
+        aggregation.compute_partial_aggregates(curr_agg, new_agg)
+    assert "Cannot compute aggregation on different dates" in str(e_info.value)
+
+    measure_name = "connection-count-daily"
+    start_date = "2021-05-01"
+    curr_agg = Aggregation(
+        measure_name=measure_name,
+        start_date=start_date,
+        sum=40,
+        count=4,
+        min=5,
+        max=15,
+        avg=10,
+    )
+    new_agg = Aggregation(
+        measure_name=measure_name,
+        start_date=start_date,
+        sum=26,
+        count=2,
+        min=6,
+        max=20,
+        avg=13,
+    )
+    agg = aggregation.compute_partial_aggregates(curr_agg, new_agg)
+    assert agg.count == 6
+    assert agg.sum == 66
+    assert agg.min == 5
+    assert agg.max == 20
+    assert agg.avg == 11
