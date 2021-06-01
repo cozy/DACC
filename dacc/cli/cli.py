@@ -7,13 +7,16 @@ from dacc.fixtures import fixtures
 def reset_tables():
     """Reset all tables in database"""
 
-    click.confirm(
-        "This will remove ALL DATA in database. Are you sure?", abort=True
-    )
-    print("Reset all tables in database...")
-    db.drop_all()
-    db.create_all()
-    print("Done.")
+    try:
+        click.confirm(
+            "This will remove ALL DATA in database. Are you sure?", abort=True
+        )
+        print("Reset all tables in database...")
+        db.drop_all()
+        db.create_all()
+        print("Done.")
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
 
 
 @dacc.cli.command("show-table")
@@ -21,8 +24,11 @@ def reset_tables():
 def show_table(table_name):
     """Show a table content"""
 
-    result = db.session.execute("SELECT * FROM {};".format(table_name))
-    print(result.fetchall())
+    try:
+        result = db.session.execute("SELECT * FROM {};".format(table_name))
+        print(result.fetchall())
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
 
 
 @dacc.cli.command("insert-fixtures-definition")
