@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 class RawMeasures(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_name = db.Column(db.String(100))
-    value = db.Column(db.Numeric(2), default=1)
+    value = db.Column(db.Numeric(precision=12, scale=2), default=1)
     start_date = db.Column(db.TIMESTAMP)
     last_updated = db.Column(db.DateTime, default=func.now())
     aggregation_period = db.Column(db.String(100))
@@ -99,19 +99,19 @@ class Aggregation(db.Model):
     group1 = db.Column(JSONB)
     group2 = db.Column(JSONB)
     group3 = db.Column(JSONB)
-    sum = db.Column(db.Numeric(2))
-    count = db.Column(db.Numeric(2))
-    count_not_zero = db.Column(db.Numeric)
-    min = db.Column(db.Numeric(2))
-    max = db.Column(db.Numeric(2))
-    avg = db.Column(db.Numeric(2))
-    std = db.Column(db.Numeric(2))
+    sum = db.Column(db.Numeric(precision=12, scale=2))
+    count = db.Column(db.Integer)
+    count_not_zero = db.Column(db.Integer)
+    min = db.Column(db.Numeric(precision=12, scale=2))
+    max = db.Column(db.Numeric(precision=12, scale=2))
+    avg = db.Column(db.Numeric(precision=12, scale=2))
+    std = db.Column(db.Numeric(precision=12, scale=2))
 
-    def query_aggregate_by_measure(m):
+    def query_aggregate_by_measure(measure_name, m):
         return (
             db.session.query(Aggregation)
             .filter(
-                Aggregation.measure_name == m.measure_name,
+                Aggregation.measure_name == measure_name,
                 Aggregation.start_date == m.start_date,
                 Aggregation.created_by == m.created_by,
                 Aggregation.group1 == m.group1,
