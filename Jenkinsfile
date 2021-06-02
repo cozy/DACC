@@ -81,8 +81,10 @@ pipeline {
       mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC build, test & deploy on **dev** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
     }
     success {
-      if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
-        mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      script {
+        if (gitlabActionType == "PUSH" && gitlabBranch == "master")  {
+          mattermostSend(color: "good", channel: "feat---dacc", message: "DACC build, test & deploy on **dev**  <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+        }
       }
     }
     aborted {
