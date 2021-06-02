@@ -5,7 +5,7 @@ from dacc.models import (
     MeasuresDefinition,
 )
 from dacc import db
-from sqlalchemy import func
+from sqlalchemy import func, update
 from datetime import datetime
 from copy import copy
 
@@ -75,11 +75,11 @@ def find_time_interval(measure_name):
     return start_date, end_date
 
 
-def compute_partial_aggregates(current_agg, new_agg):
-    if current_agg.measure_name != new_agg.measure_name:
+def compute_partial_aggregates(measure_name, current_agg, new_agg):
+    if current_agg.measure_name != measure_name:
         raise Exception(
             "Cannot compute aggregation on different measures: {} - {}".format(
-                current_agg.measure_name, new_agg.measure_name
+                current_agg.measure_name, measure_name
             )
         )
     if current_agg.start_date != new_agg.start_date:
@@ -134,9 +134,22 @@ def aggregate_raw_measures(measure_name):
                 db.session.add(agg)
             else:
                 # This will be an update in the Aggregation table
-                agg = compute_partial_aggregates(agg, gm)
+                # XXX - This might be improved by avoiding a new query
+                agg = compute_partial_aggregates(measure_name, agg, gm)
+                db.session.query(Aggregation).filter(
+                    Aggregation.id == agg.id
+                ).update(
+                    {
+                        "sum": agg.sum,
+                        "count": agg.count,
+                        "min": agg.min,
+                        "max": agg.max,
+                        "avg": agg.avg,
+                    },
+                )
 
         agg_date = get_new_aggregation_date(measure_name, end_date)
+
         if agg_date is None:
             raise Exception(
                 "No measure definition found for {}".format(measure_name)
