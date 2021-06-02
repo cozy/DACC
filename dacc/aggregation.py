@@ -109,13 +109,13 @@ def aggregate_raw_measures(measure_name):
         start_date, end_date = find_time_interval(measure_name)
         if end_date is None:
             # No measures to aggregate
-            return
+            return (None, None)
 
         grouped_measures = query_measures_to_aggregate_by_name(
             measure_name, start_date, end_date
         )
         for gm in grouped_measures:
-            agg = Aggregation.query_aggregate_by_measure(gm)
+            agg = Aggregation.query_aggregate_by_measure(measure_name, gm)
             if agg is None:
                 # This will be an insert in the Aggregation table
                 agg = Aggregation(
@@ -143,6 +143,7 @@ def aggregate_raw_measures(measure_name):
             )
         db.session.add(agg_date)
         db.session.commit()
+        return grouped_measures, agg_date.last_aggregated_measure_date
 
     except Exception as err:
         print("Error while aggregating: " + repr(err))

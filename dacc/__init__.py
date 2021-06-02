@@ -24,4 +24,5 @@ sentry_sdk.init(
 
 db = SQLAlchemy(dacc)
 
-from dacc import routes, models
+from dacc import routes, models  # noqa: E402 F401
+from dacc.cli import cli  # noqa: E402 F401
