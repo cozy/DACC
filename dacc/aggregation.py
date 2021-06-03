@@ -1,8 +1,8 @@
 from dacc.models import (
-    RawMeasures,
+    RawMeasure,
     Aggregation,
-    AggregationDates,
-    MeasuresDefinition,
+    AggregationDate,
+    MeasureDefinition,
 )
 from dacc import db
 from sqlalchemy import func, update
@@ -17,41 +17,41 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
         end_date = datetime.now()
     return (
         db.session.query(
-            RawMeasures.created_by,
-            RawMeasures.start_date,
-            RawMeasures.group1,
-            RawMeasures.group2,
-            RawMeasures.group3,
-            func.count(RawMeasures.value).label("count"),
-            func.sum(RawMeasures.value).label("sum"),
-            func.min(RawMeasures.value).label("min"),
-            func.max(RawMeasures.value).label("max"),
-            func.avg(RawMeasures.value).label("avg"),
+            RawMeasure.created_by,
+            RawMeasure.start_date,
+            RawMeasure.group1,
+            RawMeasure.group2,
+            RawMeasure.group3,
+            func.count(RawMeasure.value).label("count"),
+            func.sum(RawMeasure.value).label("sum"),
+            func.min(RawMeasure.value).label("min"),
+            func.max(RawMeasure.value).label("max"),
+            func.avg(RawMeasure.value).label("avg"),
         )
         .filter(
-            RawMeasures.measure_name == measure_name,
-            RawMeasures.last_updated > start_date,
-            RawMeasures.last_updated < end_date,
+            RawMeasure.measure_name == measure_name,
+            RawMeasure.last_updated > start_date,
+            RawMeasure.last_updated < end_date,
         )
         .group_by(
-            RawMeasures.created_by,
-            RawMeasures.start_date,
-            RawMeasures.group1,
-            RawMeasures.group2,
-            RawMeasures.group3,
+            RawMeasure.created_by,
+            RawMeasure.start_date,
+            RawMeasure.group1,
+            RawMeasure.group2,
+            RawMeasure.group3,
         )
         .all()
     )
 
 
 def get_new_aggregation_date(measure_name, date):
-    agg_date = AggregationDates.query_by_name(measure_name)
+    agg_date = AggregationDate.query_by_name(measure_name)
     if agg_date is None:
-        m_def = MeasuresDefinition.query_by_name(measure_name)
+        m_def = MeasureDefinition.query_by_name(measure_name)
         if m_def is None:
             return None
-        return AggregationDates(
-            measures_definition_id=m_def.id,
+        return AggregationDate(
+            measure_definition_id=m_def.id,
             last_aggregated_measure_date=date,
         )
     else:
@@ -60,13 +60,13 @@ def get_new_aggregation_date(measure_name, date):
 
 
 def find_time_interval(measure_name):
-    agg_date = AggregationDates.query_by_name(measure_name)
+    agg_date = AggregationDate.query_by_name(measure_name)
     if agg_date is None:
         start_date = datetime.min
     else:
         start_date = agg_date.last_aggregated_measure_date
 
-    m_most_recent_date = RawMeasures.query_most_recent_date(
+    m_most_recent_date = RawMeasure.query_most_recent_date(
         measure_name, start_date
     )
     if m_most_recent_date is None:

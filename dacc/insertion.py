@@ -1,4 +1,4 @@
-from dacc.models import RawMeasures, MeasuresDefinition
+from dacc.models import RawMeasure, MeasureDefinition
 from dacc import db
 
 
@@ -15,7 +15,7 @@ def insert_raw_measure(measure):
         else None
     )
 
-    m = RawMeasures(
+    m = RawMeasure(
         measure_name=measure.get("measureName"),
         value=measure.get("value"),
         start_date=measure.get("startDate"),
@@ -32,7 +32,7 @@ def insert_raw_measure(measure):
 
 
 def insert_measure_definition(definition):
-    d = MeasuresDefinition(
+    d = MeasureDefinition(
         name=definition.get("name"),
         created_by=definition.get("createdBy"),
         description=definition.get("description"),
