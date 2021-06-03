@@ -4,6 +4,7 @@ from dacc.models import RawMeasure, AggregationDate, Aggregation
 import pandas as pd
 from sqlalchemy import distinct
 from datetime import datetime
+import numpy as np
 
 
 def query_all_measures_name():
@@ -148,6 +149,7 @@ def test_compute_partial_aggregates():
         min=np.min(values_g1),
         max=np.max(values_g1),
         avg=np.mean(values_g1),
+        std=np.std(values_g1, ddof=1),
     )
     values_g2 = [0, 6, 20]
     new_agg = Aggregation(
@@ -159,6 +161,7 @@ def test_compute_partial_aggregates():
         min=np.min(values_g2),
         max=np.max(values_g2),
         avg=np.mean(values_g2),
+        std=np.std(values_g2, ddof=1),
     )
     agg = aggregation.compute_partial_aggregates(
         measure_name, curr_agg, new_agg
@@ -171,3 +174,23 @@ def test_compute_partial_aggregates():
     assert agg.min == np.min(values_g1 + values_g2)
     assert agg.max == np.max(values_g1 + values_g2)
     assert agg.avg == np.mean(values_g1 + values_g2)
+    assert round(agg.std, 4) == round(np.std(values_g1 + values_g2, ddof=1), 4)
+
+
+def test_compute_grouped_std():
+
+    values = [0, 5, 10, 10, 15, 20, 20]
+    val_g1 = [0, 10, 20]
+    val_g2 = [5, 10, 15, 20]
+
+    std = np.std(values, ddof=1)
+    std_g1 = np.std(val_g1, ddof=1)
+    std_g2 = np.std(val_g2, ddof=1)
+
+    agg1 = Aggregation(count=len(val_g1), std=std_g1, avg=np.mean(val_g1))
+    agg2 = Aggregation(count=len(val_g2), std=std_g2, avg=np.mean(val_g2))
+    global_mean = np.mean(values)
+
+    new_std = aggregation.compute_grouped_std(agg1, agg2, global_mean)
+
+    assert round(new_std, 4) == round(std, 4)

@@ -5,9 +5,10 @@ from dacc.models import (
     MeasureDefinition,
 )
 from dacc import db
-from sqlalchemy import func, update
+from sqlalchemy import func
 from datetime import datetime
 from copy import copy
+import math
 
 
 def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
@@ -17,21 +18,25 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
         end_date = datetime.now()
     return (
         db.session.query(
-            RawMeasure.created_by,
-            RawMeasure.start_date,
-            RawMeasure.group1,
-            RawMeasure.group2,
-            RawMeasure.group3,
-            func.count(RawMeasure.value).label("count"),
-            func.sum(RawMeasure.value).label("sum"),
-            func.min(RawMeasure.value).label("min"),
-            func.max(RawMeasure.value).label("max"),
-            func.avg(RawMeasure.value).label("avg"),
+            RawMeasures.created_by,
+            RawMeasures.start_date,
+            RawMeasures.group1,
+            RawMeasures.group2,
+            RawMeasures.group3,
+            func.count(RawMeasures.value).label("count"),
+            func.count(func.nullif(RawMeasures.value, 0)).label(
+                "count_not_zero"
+            ),
+            func.sum(RawMeasures.value).label("sum"),
+            func.min(RawMeasures.value).label("min"),
+            func.max(RawMeasures.value).label("max"),
+            func.avg(RawMeasures.value).label("avg"),
+            func.stddev(RawMeasures.value).label("std"),
         )
         .filter(
-            RawMeasure.measure_name == measure_name,
-            RawMeasure.last_updated > start_date,
-            RawMeasure.last_updated < end_date,
+            RawMeasures.measure_name == measure_name,
+            RawMeasures.last_updated > start_date,
+            RawMeasures.last_updated <= end_date,
         )
         .group_by(
             RawMeasure.created_by,
@@ -75,6 +80,34 @@ def find_time_interval(measure_name):
     return start_date, end_date
 
 
+def compute_grouped_std(current_agg, new_agg, global_mean):
+    """Compute grouped sampled standard deviation, from a current aggregation
+        and a new one.
+        See https://stackoverflow.com/questions/7753002/adding-combining-standard-deviations
+
+    Args:
+        current_agg ([Aggregation]): [the existing aggregate]
+        new_agg ([Aggregation]): [the newly computed aggregate]
+        global_mean ([float]): [mean of the whole measures]
+
+    Returns:
+        [float]: [sampled standard deviation]
+    """
+    n1 = current_agg.count
+    n2 = new_agg.count
+    v1 = current_agg.std ** 2
+    v2 = new_agg.std ** 2
+    m1 = current_agg.avg
+    m2 = new_agg.avg
+    M = global_mean
+
+    s1 = (n1 - 1) * v1 + (n2 - 1) * v2
+    s2 = n1 * (m1 - M) ** 2 + n2 * (m2 - M) ** 2
+
+    v = (s1 + s2) / (n1 + n2 - 1)  # Compute global variance
+    return math.sqrt(v)  # return std
+
+
 def compute_partial_aggregates(measure_name, current_agg, new_agg):
     if current_agg.measure_name != measure_name:
         raise Exception(
@@ -95,10 +128,12 @@ def compute_partial_aggregates(measure_name, current_agg, new_agg):
     agg.sum += new_agg.sum
     agg.min = min(agg.min, new_agg.min)
     agg.max = max(agg.max, new_agg.max)
-    agg.min = min(agg.min, new_agg.min)
-    agg.avg = (
+    global_mean = (
         agg.avg * current_agg.count + new_agg.avg * new_agg.count
     ) / agg.count
+    agg.avg = global_mean
+
+    agg.std = compute_grouped_std(current_agg, new_agg, global_mean)
 
     return agg
 
@@ -133,6 +168,7 @@ def aggregate_raw_measures(measure_name):
                     min=gm.min,
                     max=gm.max,
                     avg=gm.avg,
+                    std=gm.std,
                 )
                 db.session.add(agg)
             else:
@@ -149,6 +185,7 @@ def aggregate_raw_measures(measure_name):
                         "min": agg.min,
                         "max": agg.max,
                         "avg": agg.avg,
+                        "std": agg.std,
                     },
                 )
 
