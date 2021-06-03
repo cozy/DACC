@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 
-class RawMeasures(db.Model):
+class RawMeasure(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_name = db.Column(db.String(100))
     value = db.Column(db.Numeric(precision=12, scale=2), default=1)
@@ -21,31 +21,31 @@ class RawMeasures(db.Model):
     def query_by_name(measure_name):
         return (
             db.session.query(
-                RawMeasures.created_by,
-                RawMeasures.start_date,
-                RawMeasures.group1,
-                RawMeasures.group2,
-                RawMeasures.group3,
-                RawMeasures.value,
+                RawMeasure.created_by,
+                RawMeasure.start_date,
+                RawMeasure.group1,
+                RawMeasure.group2,
+                RawMeasure.group3,
+                RawMeasure.value,
             )
-            .filter(RawMeasures.measure_name == measure_name)
-            .order_by(RawMeasures.last_updated)
+            .filter(RawMeasure.measure_name == measure_name)
+            .order_by(RawMeasure.last_updated)
             .all()
         )
 
     def query_most_recent_date(measure_name, from_date):
         return (
-            db.session.query(RawMeasures.last_updated)
+            db.session.query(RawMeasure.last_updated)
             .filter(
-                RawMeasures.measure_name == measure_name,
-                RawMeasures.last_updated > from_date,
+                RawMeasure.measure_name == measure_name,
+                RawMeasure.last_updated > from_date,
             )
-            .order_by(RawMeasures.last_updated.desc())
+            .order_by(RawMeasure.last_updated.desc())
             .first()
         )
 
 
-class MeasuresDefinition(db.Model):
+class MeasureDefinition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True)
     org = db.Column(db.String(50))
@@ -56,36 +56,36 @@ class MeasuresDefinition(db.Model):
     description = db.Column(db.String)
     aggregation_period = db.Column(db.String(50))
     contribution_threshold = db.Column(db.Integer)
-    aggregation_dates = relationship(
-        "AggregationDates", uselist=False, back_populates="measures_definition"
+    aggregation_date = relationship(
+        "AggregationDate", uselist=False, back_populates="measure_definition"
     )
 
     def query_by_name(name):
         return (
-            db.session.query(MeasuresDefinition)
-            .filter(MeasuresDefinition.name == name)
+            db.session.query(MeasureDefinition)
+            .filter(MeasureDefinition.name == name)
             .first()
         )
 
     def query_all_names():
-        return db.session.query(MeasuresDefinition.name).all()
+        return db.session.query(MeasureDefinition.name).all()
 
 
-class AggregationDates(db.Model):
+class AggregationDate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    measures_definition_id = db.Column(
-        db.Integer, db.ForeignKey("measures_definition.id")
+    measure_definition_id = db.Column(
+        db.Integer, db.ForeignKey("measure_definition.id")
     )
     last_aggregated_measure_date = db.Column(db.TIMESTAMP)
-    measures_definition = relationship(
-        "MeasuresDefinition", back_populates="aggregation_dates"
+    measure_definition = relationship(
+        "MeasureDefinition", back_populates="aggregation_date"
     )
 
     def query_by_name(measure_name):
         return (
-            db.session.query(AggregationDates)
-            .join(MeasuresDefinition.aggregation_dates)
-            .filter(MeasuresDefinition.name == measure_name)
+            db.session.query(AggregationDate)
+            .join(MeasureDefinition.aggregation_date)
+            .filter(MeasureDefinition.name == measure_name)
             .first()
         )
 

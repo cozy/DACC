@@ -1,13 +1,13 @@
 import pytest
 from dacc import db, aggregation
-from dacc.models import RawMeasures, AggregationDates, Aggregation
+from dacc.models import RawMeasure, AggregationDate, Aggregation
 import pandas as pd
 from sqlalchemy import distinct
 from datetime import datetime
 
 
 def query_all_measures_name():
-    results = db.session.query(distinct(RawMeasures.measure_name)).all()
+    results = db.session.query(distinct(RawMeasure.measure_name)).all()
     return [v for v, in results]
 
 
@@ -29,7 +29,7 @@ def test_aggregations():
             measure_name, None, None
         )
 
-        raw_measures = RawMeasures.query_by_name(measure_name)
+        raw_measures = RawMeasure.query_by_name(measure_name)
 
         df_raw = pd.DataFrame(
             data=raw_measures,
@@ -87,8 +87,8 @@ def test_time_interval():
 
     # Raw measures exist with aggregation date
     m_date = datetime(2021, 5, 1, 0, 0, 0, 0)
-    agg_date = AggregationDates(
-        measures_definition_id=1,
+    agg_date = AggregationDate(
+        measure_definition_id=1,
         last_aggregated_measure_date=m_date,
     )
     db.session.add(agg_date)
@@ -109,7 +109,7 @@ def test_new_aggregation_date():
     agg_date = aggregation.get_new_aggregation_date(
         "connection-count-daily", date
     )
-    assert agg_date.measures_definition_id == 1
+    assert agg_date.measure_definition_id == 1
     assert agg_date.last_aggregated_measure_date == date
 
     db.session.add(agg_date)
@@ -117,7 +117,7 @@ def test_new_aggregation_date():
     agg_date = aggregation.get_new_aggregation_date(
         "connection-count-daily", date
     )
-    assert agg_date.measures_definition_id == 1
+    assert agg_date.measure_definition_id == 1
     assert agg_date.last_aggregated_measure_date == date
 
 
