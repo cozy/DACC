@@ -125,7 +125,7 @@ def test_compute_partial_aggregates():
     curr_agg = Aggregation(measure_name="dummy1")
     new_agg = Aggregation(measure_name="dummy2")
     with pytest.raises(Exception) as e_info:
-        aggregation.compute_partial_aggregates(curr_agg, new_agg)
+        aggregation.compute_partial_aggregates("dummy2", curr_agg, new_agg)
     assert "Cannot compute aggregation on different measures" in str(
         e_info.value
     )
@@ -133,7 +133,7 @@ def test_compute_partial_aggregates():
     curr_agg = Aggregation(measure_name="dummy1", start_date="2020-05-01")
     new_agg = Aggregation(measure_name="dummy1", start_date="2020-05-02")
     with pytest.raises(Exception) as e_info:
-        aggregation.compute_partial_aggregates(curr_agg, new_agg)
+        aggregation.compute_partial_aggregates("dummy1", curr_agg, new_agg)
     assert "Cannot compute aggregation on different dates" in str(e_info.value)
 
     measure_name = "connection-count-daily"
@@ -156,7 +156,9 @@ def test_compute_partial_aggregates():
         max=20,
         avg=13,
     )
-    agg = aggregation.compute_partial_aggregates(curr_agg, new_agg)
+    agg = aggregation.compute_partial_aggregates(
+        measure_name, curr_agg, new_agg
+    )
     assert agg.count == 6
     assert agg.sum == 66
     assert agg.min == 5
