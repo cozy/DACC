@@ -138,29 +138,36 @@ def test_compute_partial_aggregates():
 
     measure_name = "connection-count-daily"
     start_date = "2021-05-01"
+    values_g1 = [5, 10, 10, 15]
     curr_agg = Aggregation(
         measure_name=measure_name,
         start_date=start_date,
-        sum=40,
-        count=4,
-        min=5,
-        max=15,
-        avg=10,
+        sum=np.sum(values_g1),
+        count=len(values_g1),
+        count_not_zero=len(np.nonzero(values_g1)[0]),
+        min=np.min(values_g1),
+        max=np.max(values_g1),
+        avg=np.mean(values_g1),
     )
+    values_g2 = [0, 6, 20]
     new_agg = Aggregation(
         measure_name=measure_name,
         start_date=start_date,
-        sum=26,
-        count=2,
-        min=6,
-        max=20,
-        avg=13,
+        sum=np.sum(values_g2),
+        count=len(values_g2),
+        count_not_zero=len(np.nonzero(values_g2)[0]),
+        min=np.min(values_g2),
+        max=np.max(values_g2),
+        avg=np.mean(values_g2),
     )
     agg = aggregation.compute_partial_aggregates(
         measure_name, curr_agg, new_agg
     )
-    assert agg.count == 6
-    assert agg.sum == 66
-    assert agg.min == 5
-    assert agg.max == 20
-    assert agg.avg == 11
+    assert agg.count == len(values_g1) + len(values_g2)
+    assert agg.count_not_zero == len(np.nonzero(values_g1)[0]) + len(
+        np.nonzero(values_g2)[0]
+    )
+    assert agg.sum == np.sum(values_g1) + np.sum(values_g2)
+    assert agg.min == np.min(values_g1 + values_g2)
+    assert agg.max == np.max(values_g1 + values_g2)
+    assert agg.avg == np.mean(values_g1 + values_g2)

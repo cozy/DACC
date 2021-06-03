@@ -91,7 +91,9 @@ def compute_partial_aggregates(measure_name, current_agg, new_agg):
 
     agg = copy(current_agg)
     agg.count += new_agg.count
+    agg.count_not_zero += new_agg.count_not_zero
     agg.sum += new_agg.sum
+    agg.min = min(agg.min, new_agg.min)
     agg.max = max(agg.max, new_agg.max)
     agg.min = min(agg.min, new_agg.min)
     agg.avg = (
@@ -127,6 +129,7 @@ def aggregate_raw_measures(measure_name):
                     group3=gm.group3,
                     sum=gm.sum,
                     count=gm.count,
+                    count_not_zero=gm.count_not_zero,
                     min=gm.min,
                     max=gm.max,
                     avg=gm.avg,
@@ -142,6 +145,7 @@ def aggregate_raw_measures(measure_name):
                     {
                         "sum": agg.sum,
                         "count": agg.count,
+                        "count_not_zero": agg.count_not_zero,
                         "min": agg.min,
                         "max": agg.max,
                         "avg": agg.avg,
