@@ -25,7 +25,6 @@ def insert_raw_measure(measure):
             group1=group1,
             group2=group2,
             group3=group3,
-            is_aggregated=False,
         )
         db.session.add(m)
         db.session.commit()

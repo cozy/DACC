@@ -15,7 +15,6 @@ class RawMeasure(db.Model):
     group1 = db.Column(JSONB(none_as_null=True))
     group2 = db.Column(JSONB(none_as_null=True))
     group3 = db.Column(JSONB(none_as_null=True))
-    is_aggregated = db.Column(db.Boolean)
 
     # TODO: indexing on last_updated might be good
     def query_by_name(measure_name):
