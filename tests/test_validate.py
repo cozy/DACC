@@ -9,11 +9,14 @@ def assert_exception(m, exception_value):
 
 
 def test_check_incoming_raw_measure():
+    m = None
+    assert_exception(m, "The measure cannot be empty")
+
     m = {"value": 42}
     assert_exception(m, "A measure name must be given")
 
     m = {"measureName": "dummy", "value": 42}
-    assert_exception(m, "No measure definition found for dummy")
+    assert_exception(m, "No measure definition found for: dummy")
 
     m = {"measureName": "connection-count-daily"}
     assert_exception(m, "A value must be given")

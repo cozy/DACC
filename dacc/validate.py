@@ -22,13 +22,18 @@ def check_incoming_raw_measure(measure):
         [boolean]: [True if the measure is valid]
     """
 
+    if measure is None:
+        raise Exception("The measure cannot be empty")
+
     if "measureName" not in measure:
         raise Exception("A measure name must be given")
 
     m_def = MeasureDefinition.query_by_name(measure["measureName"])
     if m_def is None:
         raise Exception(
-            "No measure definition found for {}".format(measure["measureName"])
+            "No measure definition found for: {}".format(
+                measure["measureName"]
+            )
         )
 
     if "value" not in measure:

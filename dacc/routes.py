@@ -1,17 +1,30 @@
-from dacc import dacc, db
-from flask import jsonify, request
+from dacc import dacc, db, validate, insertion
+from flask import json, jsonify, request
+from werkzeug.exceptions import HTTPException
 
 
-@dacc.route("/")
-def index():
-    return "Hello, World!"
+def handle_error(err, code):
+    return jsonify({"error": str(err)}), code
 
 
-@dacc.route("/contribute", methods=["POST"])
+@dacc.errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    response = e.get_response()
+    response.data = json.dumps({"error": e.description})
+    response.content_type = "application/json"
+    return response
+
+
+@dacc.route("/measure", methods=["POST"])
 def contribute():
-    request_data = request.get_json()
-    print(request_data)
-    return "ok"
+    try:
+        measure = request.get_json()
+        if validate.check_incoming_raw_measure(measure):
+            insertion.insert_raw_measure(measure)
+            return jsonify({"ok": True}), 201
+    except Exception as err:
+        return handle_error(err, 400)
 
 
 @dacc.route("/status")
