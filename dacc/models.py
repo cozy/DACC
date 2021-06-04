@@ -56,6 +56,8 @@ class MeasureDefinition(db.Model):
     description = db.Column(db.String)
     aggregation_period = db.Column(db.String(50))
     contribution_threshold = db.Column(db.Integer)
+    access_app = db.Column(db.Boolean)
+    access_public = db.Column(db.Boolean)
     aggregation_date = relationship(
         "AggregationDate", uselist=False, back_populates="measure_definition"
     )
