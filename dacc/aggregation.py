@@ -18,25 +18,25 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
         end_date = datetime.now()
     return (
         db.session.query(
-            RawMeasures.created_by,
-            RawMeasures.start_date,
-            RawMeasures.group1,
-            RawMeasures.group2,
-            RawMeasures.group3,
-            func.count(RawMeasures.value).label("count"),
-            func.count(func.nullif(RawMeasures.value, 0)).label(
+            RawMeasure.created_by,
+            RawMeasure.start_date,
+            RawMeasure.group1,
+            RawMeasure.group2,
+            RawMeasure.group3,
+            func.count(RawMeasure.value).label("count"),
+            func.count(func.nullif(RawMeasure.value, 0)).label(
                 "count_not_zero"
             ),
-            func.sum(RawMeasures.value).label("sum"),
-            func.min(RawMeasures.value).label("min"),
-            func.max(RawMeasures.value).label("max"),
-            func.avg(RawMeasures.value).label("avg"),
-            func.stddev(RawMeasures.value).label("std"),
+            func.sum(RawMeasure.value).label("sum"),
+            func.min(RawMeasure.value).label("min"),
+            func.max(RawMeasure.value).label("max"),
+            func.avg(RawMeasure.value).label("avg"),
+            func.stddev(RawMeasure.value).label("std"),
         )
         .filter(
-            RawMeasures.measure_name == measure_name,
-            RawMeasures.last_updated > start_date,
-            RawMeasures.last_updated <= end_date,
+            RawMeasure.measure_name == measure_name,
+            RawMeasure.last_updated > start_date,
+            RawMeasure.last_updated <= end_date,
         )
         .group_by(
             RawMeasure.created_by,
@@ -128,12 +128,11 @@ def compute_partial_aggregates(measure_name, current_agg, new_agg):
     agg.sum += new_agg.sum
     agg.min = min(agg.min, new_agg.min)
     agg.max = max(agg.max, new_agg.max)
-    global_mean = (
-        agg.avg * current_agg.count + new_agg.avg * new_agg.count
-    ) / agg.count
-    agg.avg = global_mean
-
-    agg.std = compute_grouped_std(current_agg, new_agg, global_mean)
+    # XXX - The mean could be computed on restitution instead of storing it.
+    agg.avg = (current_agg.sum + new_agg.sum) / agg.count
+    # XXX - Using variance might be more precise to avoid float rounds
+    # and std computed on restitution
+    agg.std = compute_grouped_std(current_agg, new_agg, agg.avg)
 
     return agg
 
