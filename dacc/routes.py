@@ -1,5 +1,18 @@
-from dacc import dacc, db
-from flask import jsonify, request
+from flask import json, jsonify, request
+from werkzeug.exceptions import HTTPException
+
+
+def handle_error(err, code):
+    return jsonify({"error": str(err)}), code
+
+
+@dacc.errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    response = e.get_response()
+    response.data = json.dumps({"error": e.description})
+    response.content_type = "application/json"
+    return response
 
 
 @dacc.route("/")
