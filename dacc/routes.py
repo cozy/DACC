@@ -1,3 +1,4 @@
+from dacc import dacc, db, validate, insertion
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
 
@@ -15,16 +16,15 @@ def handle_exception(e):
     return response
 
 
-@dacc.route("/")
-def index():
-    return "Hello, World!"
-
-
-@dacc.route("/contribute", methods=["POST"])
+@dacc.route("/measure", methods=["POST"])
 def contribute():
-    request_data = request.get_json()
-    print(request_data)
-    return "ok"
+    try:
+        measure = request.get_json()
+        if validate.check_incoming_raw_measure(measure):
+            insertion.insert_raw_measure(measure)
+            return jsonify({"ok": True}), 201
+    except Exception as err:
+        return handle_error(err, 400)
 
 
 @dacc.route("/status")
