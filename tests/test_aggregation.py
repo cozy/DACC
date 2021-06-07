@@ -66,7 +66,66 @@ def test_aggregations():
             assert aggregated_rows[i].avg == avgs.value[i]
 
 
-def test_time_interval():
+def test_aggregate_dates():
+    measure_name = "dummy"
+    measures = [
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-01T00:00:01",
+            value=42,
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-02",
+            value=42,
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-02",
+            value=42,
+        ),
+    ]
+    for m in measures:
+        db.session.add(m)
+    start_date = "2021-05-01T00:00:01"
+    end_date = "2021-05-03T00:00:00"
+    agg = aggregation.aggregate_measures_from_db(
+        measure_name, start_date, end_date
+    )
+    assert len(agg) == 1
+    # The first measure is filtered out because of the start date
+    assert agg[0].count == 2
+
+    m = RawMeasure(
+        measure_name=measure_name,
+        start_date="2021-05-01",
+        last_updated="2021-05-03T00:00:01",
+        value=42,
+    )
+    db.session.add(m)
+    agg = aggregation.aggregate_measures_from_db(
+        measure_name, start_date, end_date
+    )
+    assert len(agg) == 1
+    # The last measure is filtered out because of the last date
+    assert agg[0].count == 2
+
+    start_date = "2021-05-01T00:00:00"
+    end_date = "2021-05-03T00:00:01"
+    agg = aggregation.aggregate_measures_from_db(
+        measure_name, start_date, end_date
+    )
+    assert len(agg) == 1
+    # All measures are included
+    assert agg[0].count == 4
+
+    db.session.rollback()
+
+
+def test_dates_bounds():
     # The indicator does not exist
     start_date, end_date = aggregation.find_dates_bounds("wrong-measure")
     assert start_date is None
