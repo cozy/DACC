@@ -17,7 +17,12 @@ def handle_exception(e):
 
 
 @dacc.route("/measure", methods=["POST"])
-def contribute():
+def add_raw_measure():
+    """Add a raw measure to the database
+
+    Returns:
+        HTTP response: {"ok": true} if everything went well
+    """
     try:
         measure = request.get_json()
         if validate.check_incoming_raw_measure(measure):
