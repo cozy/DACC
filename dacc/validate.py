@@ -3,23 +3,23 @@ from dateutil.parser import parse
 
 
 def check_incoming_raw_measure(measure):
-    """[Check the incoming raw measure is valid]
+    """Check the incoming raw measure is valid.
 
     Args:
-        measure ([JSON]): [The raw measure]
+        measure (dict): The raw measure
 
     Raises:
-        Exception: [The measure name is not given]
-        Exception: [The measure name does not exist]
-        Exception: [The value is not given]
-        Exception: [The value type is not correct]
-        Exception: [The startDate is not given]
-        Exception: [The startDate is not correct]
-        Exception: [The groups format is not correct]
-        Exception: [The groups key does not match measure definition]
+        Exception: The measure name is not given
+        Exception: The measure name does not exist
+        Exception: The value is not given
+        Exception: The value type is not correct
+        Exception: The startDate is not given
+        Exception: The startDate is not correct
+        Exception: The groups format is not correct
+        Exception: The groups key does not match measure definition
 
     Returns:
-        [boolean]: [True if the measure is valid]
+        bool: True if the measure is valid
     """
 
     if measure is None:

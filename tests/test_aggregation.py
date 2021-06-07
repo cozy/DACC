@@ -26,7 +26,7 @@ def convert_columns(df_raw):
 def test_aggregations():
     measure_names = query_all_measures_name()
     for measure_name in measure_names:
-        aggregated_rows = aggregation.query_measures_to_aggregate_by_name(
+        aggregated_rows = aggregation.aggregate_measures_from_db(
             measure_name, None, None
         )
 
@@ -68,19 +68,19 @@ def test_aggregations():
 
 def test_time_interval():
     # The indicator does not exist
-    start_date, end_date = aggregation.find_time_interval("wrong-measure")
+    start_date, end_date = aggregation.find_dates_bounds("wrong-measure")
     assert start_date is None
     assert end_date is None
 
     # No raw measure for this indicator
-    start_date, end_date = aggregation.find_time_interval(
+    start_date, end_date = aggregation.find_dates_bounds(
         "energy-consumption-daily"
     )
     assert start_date is None
     assert end_date is None
 
     # Raw measures exist but no aggregation date
-    start_date, end_date = aggregation.find_time_interval(
+    start_date, end_date = aggregation.find_dates_bounds(
         "connection-count-daily"
     )
     assert start_date == datetime.min
@@ -93,7 +93,7 @@ def test_time_interval():
         last_aggregated_measure_date=m_date,
     )
     db.session.add(agg_date)
-    start_date, end_date = aggregation.find_time_interval(
+    start_date, end_date = aggregation.find_dates_bounds(
         "connection-count-daily"
     )
     assert start_date == m_date

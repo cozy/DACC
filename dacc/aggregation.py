@@ -11,7 +11,19 @@ from copy import copy
 import math
 
 
-def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
+def aggregate_measures_from_db(
+    measure_name: str, start_date: str, end_date: str
+):
+    """Aggregate measures on a time interval.
+
+    Args:
+        measure_name (str): The measure name
+        start_date (str): The start date of the query
+        end_date (str): The end date of the query
+
+    Returns:
+        list(RawMeasure): the aggregated measures
+    """
     if start_date is None:
         start_date = datetime.min
     if end_date is None:
@@ -49,7 +61,16 @@ def query_measures_to_aggregate_by_name(measure_name, start_date, end_date):
     )
 
 
-def get_new_aggregation_date(measure_name, date):
+def get_new_aggregation_date(measure_name: str, date: str):
+    """Update the AggregationDate with the given date.
+
+    Args:
+        measure_name (str): The measure name
+        date (str): The new date to save
+
+    Returns:
+        AggregationDate: the updated database entry
+    """
     agg_date = AggregationDate.query_by_name(measure_name)
     if agg_date is None:
         m_def = MeasureDefinition.query_by_name(measure_name)
@@ -64,7 +85,15 @@ def get_new_aggregation_date(measure_name, date):
         return agg_date
 
 
-def find_time_interval(measure_name):
+def find_dates_bounds(measure_name: str):
+    """Find the starting date and ending date of the measure.
+
+    Args:
+        measure_name (str): The measure name
+
+    Returns:
+        (str, str): A (start_date, end_date) tuple
+    """
     agg_date = AggregationDate.query_by_name(measure_name)
     if agg_date is None:
         start_date = datetime.min
@@ -80,18 +109,21 @@ def find_time_interval(measure_name):
     return start_date, end_date
 
 
-def compute_grouped_std(current_agg, new_agg, global_mean):
-    """Compute grouped sampled standard deviation, from a current aggregation
-        and a new one.
-        See https://stackoverflow.com/questions/7753002/adding-combining-standard-deviations
+def compute_grouped_std(
+    current_agg: Aggregation, new_agg: Aggregation, global_mean: float
+):
+    """Compute grouped sampled standard deviation.
+
+    It comptues from a current aggregation and a new one.
+    See https://stackoverflow.com/questions/7753002/adding-combining-standard-deviations # noqa: E501
 
     Args:
-        current_agg ([Aggregation]): [the existing aggregate]
-        new_agg ([Aggregation]): [the newly computed aggregate]
-        global_mean ([float]): [mean of the whole measures]
+        current_agg (Aggregation): the existing aggregate
+        new_agg (Aggregation): the newly computed aggregate
+        global_mean (float): mean of the whole measures
 
     Returns:
-        [float]: [sampled standard deviation]
+        float: sampled standard deviation
     """
     n1 = current_agg.count
     n2 = new_agg.count
@@ -108,7 +140,24 @@ def compute_grouped_std(current_agg, new_agg, global_mean):
     return math.sqrt(v)  # return std
 
 
-def compute_partial_aggregates(measure_name, current_agg, new_agg):
+def compute_partial_aggregates(
+    measure_name: str, current_agg: Aggregation, new_agg: Aggregation
+):
+    """Compute a partial aggregate based on a current and new aggregation.
+
+    Args:
+        measure_name (str): The measure name
+        current_agg (Aggregation): The current aggregation, from database
+        new_agg (Aggregation): The new aggregation, computed from raw measures
+
+    Raises:
+        Exception: The measure name must be the same bewteen aggregations
+        Exception: The dates must be different between aggregations
+
+    Returns:
+        Aggregation: The newly computed aggregation
+    """
+
     if current_agg.measure_name != measure_name:
         raise Exception(
             "Cannot compute aggregation on different measures: {} - {}".format(
@@ -140,14 +189,27 @@ def compute_partial_aggregates(measure_name, current_agg, new_agg):
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
-def aggregate_raw_measures(measure_name):
+def aggregate_raw_measures(measure_name: str):
+    """Aggregate raw measures on a time period and save them in the
+    Aggregation table.
+
+    Args:
+        measure_name (str): The measure name
+
+    Raises:
+        Exception: Any exception raised during the process.
+
+    Returns:
+        (list(Aggregation), str): The aggregated tuples and the last saved
+        aggregated date
+    """
     try:
-        start_date, end_date = find_time_interval(measure_name)
+        start_date, end_date = find_dates_bounds(measure_name)
         if end_date is None:
             # No measures to aggregate
             return (None, None)
 
-        grouped_measures = query_measures_to_aggregate_by_name(
+        grouped_measures = aggregate_measures_from_db(
             measure_name, start_date, end_date
         )
         for gm in grouped_measures:
