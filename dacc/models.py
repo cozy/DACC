@@ -54,6 +54,7 @@ class MeasureDefinition(db.Model):
     group3_key = db.Column(db.String(100))
     description = db.Column(db.String)
     aggregation_period = db.Column(db.String(50))
+    execution_frequency = db.Column(db.String(50))
     contribution_threshold = db.Column(db.Integer)
     access_app = db.Column(db.Boolean)
     access_public = db.Column(db.Boolean)

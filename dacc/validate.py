@@ -1,5 +1,7 @@
 from dacc.models import MeasureDefinition
+from dacc import utils
 from dateutil.parser import parse
+from datetime import datetime
 
 
 def check_incoming_raw_measure(measure):
@@ -85,3 +87,23 @@ def check_incoming_raw_measure(measure):
                 )
             )
     return True
+
+
+def is_execution_frequency_respected(
+    start_date: datetime, m_definition: MeasureDefinition
+):
+    """Check if the the given measure can be executed w.r.t
+    to the execution frequency and the date interval between a
+    start date and now.
+
+    Args:
+        start_date (datetime): The last execution date
+        m_definition (MeasureDefinition): The measure definition
+
+    Returns:
+        bool: True is the execution frequency is respected
+    """
+    end_date = datetime.now()
+    return utils.is_dates_interval_higher(
+        start_date, end_date, m_definition.execution_frequency
+    )

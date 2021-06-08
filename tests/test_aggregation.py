@@ -1,10 +1,15 @@
 import pytest
 from dacc import db, aggregation
-from dacc.models import RawMeasure, AggregationDate, Aggregation
+from dacc.models import (
+    RawMeasure,
+    AggregationDate,
+    Aggregation,
+    MeasureDefinition,
+)
 import pandas as pd
 from sqlalchemy import distinct
-from datetime import datetime
 import numpy as np
+from datetime import datetime, timedelta
 
 
 def query_all_measures_name():
@@ -126,22 +131,15 @@ def test_aggregate_dates():
 
 
 def test_dates_bounds():
-    # The indicator does not exist
-    start_date, end_date = aggregation.find_dates_bounds("wrong-measure")
-    assert start_date is None
-    assert end_date is None
-
     # No raw measure for this indicator
-    start_date, end_date = aggregation.find_dates_bounds(
-        "energy-consumption-daily"
-    )
+    m_def = MeasureDefinition.query_by_name("energy-consumption-daily")
+    start_date, end_date = aggregation.find_dates_bounds(m_def)
     assert start_date is None
     assert end_date is None
 
     # Raw measures exist but no aggregation date
-    start_date, end_date = aggregation.find_dates_bounds(
-        "connection-count-daily"
-    )
+    m_def = MeasureDefinition.query_by_name("connection-count-daily")
+    start_date, end_date = aggregation.find_dates_bounds(m_def)
     assert start_date == datetime.min
     assert end_date == datetime(2021, 5, 3, 0, 0, 0, 4000)
 
@@ -152,9 +150,7 @@ def test_dates_bounds():
         last_aggregated_measure_date=m_date,
     )
     db.session.add(agg_date)
-    start_date, end_date = aggregation.find_dates_bounds(
-        "connection-count-daily"
-    )
+    start_date, end_date = aggregation.find_dates_bounds(m_def)
     assert start_date == m_date
     assert end_date == datetime(2021, 5, 3, 0, 0, 0, 4000)
 
@@ -162,21 +158,15 @@ def test_dates_bounds():
 
 
 def test_new_aggregation_date():
-    agg_date = aggregation.get_new_aggregation_date("wrong-measure", None)
-    assert agg_date is None
-
+    m_def = MeasureDefinition.query_by_name("connection-count-daily")
     date = datetime(2021, 5, 1, 0, 0, 0, 0)
-    agg_date = aggregation.get_new_aggregation_date(
-        "connection-count-daily", date
-    )
+    agg_date = aggregation.get_new_aggregation_date(m_def, date)
     assert agg_date.measure_definition_id == 1
     assert agg_date.last_aggregated_measure_date == date
 
     db.session.add(agg_date)
     date = datetime(2021, 5, 2, 0, 0, 0, 0)
-    agg_date = aggregation.get_new_aggregation_date(
-        "connection-count-daily", date
-    )
+    agg_date = aggregation.get_new_aggregation_date(m_def, date)
     assert agg_date.measure_definition_id == 1
     assert agg_date.last_aggregated_measure_date == date
 
@@ -253,3 +243,50 @@ def test_compute_grouped_std():
     new_std = aggregation.compute_grouped_std(agg1, agg2, global_mean)
 
     assert round(new_std, 4) == round(std, 4)
+
+
+def test_aggregation_execution():
+    m_def = MeasureDefinition.query_by_name("connection-count-daily")
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 3
+    assert date == datetime(2021, 5, 3, 0, 0, 0, 4000)
+
+    # No new measure
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert agg is None
+    assert date is None
+
+    # New measure is aggregated
+    m = RawMeasure(
+        measure_name="connection-count-daily",
+        value=42,
+        start_date="2021-05-02",
+        group1='{"device": "mobile"}',
+    )
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 1
+
+    # Execution date is too close
+    m = RawMeasure(
+        measure_name="connection-count-daily",
+        value=42,
+        start_date="2021-05-03",
+        group1='{"device": "mobile"}',
+    )
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert agg is None
+    assert date is None
+
+    # Force execution of last 2 inserts
+    agg_date = AggregationDate.query_by_name(m_def.name)
+    agg_date.last_aggregated_measure_date = datetime.now() - timedelta(days=1)
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 2
+    assert agg[0].start_date == datetime(2021, 5, 2)
+    assert agg[1].start_date == datetime(2021, 5, 3)

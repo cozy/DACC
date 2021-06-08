@@ -4,7 +4,7 @@ from dacc.models import (
     AggregationDate,
     MeasureDefinition,
 )
-from dacc import db
+from dacc import db, validate
 from sqlalchemy import func
 from datetime import datetime
 from copy import copy
@@ -61,23 +61,20 @@ def aggregate_measures_from_db(
     )
 
 
-def get_new_aggregation_date(measure_name: str, date: str):
+def get_new_aggregation_date(m_definition: MeasureDefinition, date: str):
     """Update the AggregationDate with the given date.
 
     Args:
-        measure_name (str): The measure name
+        m_definition (MeasureDefinition): The measure definition
         date (str): The new date to save
 
     Returns:
         AggregationDate: the updated database entry
     """
-    agg_date = AggregationDate.query_by_name(measure_name)
+    agg_date = AggregationDate.query_by_name(m_definition.name)
     if agg_date is None:
-        m_def = MeasureDefinition.query_by_name(measure_name)
-        if m_def is None:
-            return None
         return AggregationDate(
-            measure_definition_id=m_def.id,
+            measure_definition_id=m_definition.id,
             last_aggregated_measure_date=date,
         )
     else:
@@ -85,23 +82,23 @@ def get_new_aggregation_date(measure_name: str, date: str):
         return agg_date
 
 
-def find_dates_bounds(measure_name: str):
+def find_dates_bounds(m_definition: MeasureDefinition):
     """Find the starting date and ending date of the measure.
 
     Args:
-        measure_name (str): The measure name
+        m_definition (MeasureDefinition): The measure definition
 
     Returns:
         (str, str): A (start_date, end_date) tuple
     """
-    agg_date = AggregationDate.query_by_name(measure_name)
+    agg_date = AggregationDate.query_by_name(m_definition.name)
     if agg_date is None:
         start_date = datetime.min
     else:
         start_date = agg_date.last_aggregated_measure_date
 
     m_most_recent_date = RawMeasure.query_most_recent_date(
-        measure_name, start_date
+        m_definition.name, start_date
     )
     if m_most_recent_date is None:
         return (None, None)
@@ -189,12 +186,12 @@ def compute_partial_aggregates(
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
-def aggregate_raw_measures(measure_name: str):
+def aggregate_raw_measures(m_definition: MeasureDefinition):
     """Aggregate raw measures on a time period and save them in the
     Aggregation table.
 
     Args:
-        measure_name (str): The measure name
+        m_definition (MeasureDefinition): The measure definition
 
     Raises:
         Exception: Any exception raised during the process.
@@ -204,11 +201,17 @@ def aggregate_raw_measures(measure_name: str):
         aggregated date
     """
     try:
-        start_date, end_date = find_dates_bounds(measure_name)
+        start_date, end_date = find_dates_bounds(m_definition)
         if end_date is None:
             # No measures to aggregate
             return (None, None)
+        if not validate.is_execution_frequency_respected(
+            start_date, m_definition
+        ):
+            # This execution is too close from the last run
+            return (None, None)
 
+        measure_name = m_definition.name
         grouped_measures = aggregate_measures_from_db(
             measure_name, start_date, end_date
         )
@@ -250,7 +253,7 @@ def aggregate_raw_measures(measure_name: str):
                     },
                 )
 
-        agg_date = get_new_aggregation_date(measure_name, end_date)
+        agg_date = get_new_aggregation_date(m_definition, end_date)
 
         if agg_date is None:
             raise Exception(
