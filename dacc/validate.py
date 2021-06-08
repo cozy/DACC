@@ -101,7 +101,7 @@ def is_execution_frequency_respected(
         m_definition (MeasureDefinition): The measure definition
 
     Returns:
-        bool: True if the execution frequency is respected
+        bool: True is the execution frequency is respected
     """
     end_date = datetime.now()
     return utils.is_dates_interval_higher(

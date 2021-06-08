@@ -4,7 +4,7 @@ from dacc.models import (
     AggregationDate,
     MeasureDefinition,
 )
-from dacc import db
+from dacc import db, validate
 from sqlalchemy import func
 from datetime import datetime
 from copy import copy
@@ -204,6 +204,11 @@ def aggregate_raw_measures(m_definition: MeasureDefinition):
         start_date, end_date = find_dates_bounds(m_definition)
         if end_date is None:
             # No measures to aggregate
+            return (None, None)
+        if not validate.is_execution_frequency_respected(
+            start_date, m_definition
+        ):
+            # This execution is too close from the last run
             return (None, None)
 
         measure_name = m_definition.name
