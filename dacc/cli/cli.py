@@ -1,6 +1,6 @@
 import click
 from dacc import dacc, db, aggregation
-from dacc.fixtures import fixtures
+from tests.fixtures import fixtures
 
 
 @dacc.cli.command("reset-all-tables")

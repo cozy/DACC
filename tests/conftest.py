@@ -1,6 +1,6 @@
 import pytest
 from dacc import db
-from dacc.fixtures import fixtures
+from tests.fixtures import fixtures
 
 
 @pytest.fixture(scope="session", autouse=True)
