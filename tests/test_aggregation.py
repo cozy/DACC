@@ -8,8 +8,8 @@ from dacc.models import (
 )
 import pandas as pd
 from sqlalchemy import distinct
-from datetime import datetime
 import numpy as np
+from datetime import datetime, timedelta
 
 
 def query_all_measures_name():
@@ -243,3 +243,50 @@ def test_compute_grouped_std():
     new_std = aggregation.compute_grouped_std(agg1, agg2, global_mean)
 
     assert round(new_std, 4) == round(std, 4)
+
+
+def test_aggregation_execution():
+    m_def = MeasureDefinition.query_by_name("connection-count-daily")
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 3
+    assert date == datetime(2021, 5, 3, 0, 0, 0, 4000)
+
+    # No new measure
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert agg is None
+    assert date is None
+
+    # New measure is aggregated
+    m = RawMeasure(
+        measure_name="connection-count-daily",
+        value=42,
+        start_date="2021-05-02",
+        group1='{"device": "mobile"}',
+    )
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 1
+
+    # Execution date is too close
+    m = RawMeasure(
+        measure_name="connection-count-daily",
+        value=42,
+        start_date="2021-05-03",
+        group1='{"device": "mobile"}',
+    )
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert agg is None
+    assert date is None
+
+    # Force execution of last 2 inserts
+    agg_date = AggregationDate.query_by_name(m_def.name)
+    agg_date.last_aggregated_measure_date = datetime.now() - timedelta(days=1)
+    db.session.add(m)
+    db.session.commit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 2
+    assert agg[0].start_date == datetime(2021, 5, 2)
+    assert agg[1].start_date == datetime(2021, 5, 3)
