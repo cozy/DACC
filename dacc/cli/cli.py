@@ -1,8 +1,10 @@
 import click
 import sys
-from dacc import dacc, db, aggregation
+import os
+from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
 from dacc.models import MeasureDefinition
+from sqlalchemy import exc
 
 
 @dacc.cli.command("reset-all-tables")
@@ -46,6 +48,30 @@ def show_table(table_name):
     try:
         result = db.session.execute("SELECT * FROM {};".format(table_name))
         print(result.fetchall())
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("insert-definitions")
+@click.option(
+    "-f", "file_path", default="data/definitions.sql", show_default=True
+)
+def insert_measure_definition(file_path):
+    """Insert measure definitions from file"""
+
+    try:
+        path = os.path.join(consts.ROOT_PATH, file_path)
+        f = open(path, "r")
+        lines = f.readlines()
+        for stmt in lines:
+            print(stmt)
+            try:
+                db.session.execute(stmt)
+            except exc.IntegrityError:
+                db.session.rollback()
+                print("IGNORED - Already exist.")
+                pass
+        db.session.commit()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
 

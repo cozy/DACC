@@ -45,6 +45,8 @@ class RawMeasure(db.Model):
 
 
 class MeasureDefinition(db.Model):
+    # TODO add integrity checks such as control on group order, exec freq
+    # consistency w.r.t. agg period, ...
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True)
     org = db.Column(db.String(50))
@@ -74,6 +76,7 @@ class MeasureDefinition(db.Model):
 
 
 class AggregationDate(db.Model):
+    # TODO: Add integriy check with measure definition ?
     id = db.Column(db.Integer, primary_key=True)
     measure_definition_id = db.Column(
         db.Integer, db.ForeignKey("measure_definition.id")
