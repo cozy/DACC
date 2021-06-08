@@ -9,6 +9,7 @@ from sqlalchemy import func
 from datetime import datetime
 from copy import copy
 import math
+import logging
 
 
 def aggregate_measures_from_db(
@@ -204,11 +205,17 @@ def aggregate_raw_measures(m_definition: MeasureDefinition):
         start_date, end_date = find_dates_bounds(m_definition)
         if end_date is None:
             # No measures to aggregate
+            logging.info("No new measure for {}".format(m_definition.name))
             return (None, None)
         if not validate.is_execution_frequency_respected(
             start_date, m_definition
         ):
             # This execution is too close from the last run
+            logging.info(
+                "Execution is too close from the last run for: {}".format(
+                    m_definition.name
+                )
+            )
             return (None, None)
 
         measure_name = m_definition.name
