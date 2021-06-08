@@ -1,6 +1,8 @@
 import click
+import sys
 from dacc import dacc, db, aggregation
 from tests.fixtures import fixtures
+from dacc.models import MeasureDefinition
 
 
 @dacc.cli.command("reset-all-tables")
@@ -79,8 +81,29 @@ def insert_fixtures(n_measures, days, starting_day):
 def compute_aggregation(measure_name):
     """Compute aggregation for a measure"""
 
-    agg, date = aggregation.aggregate_raw_measures(measure_name)
+    m_def = MeasureDefinition.query_by_name(measure_name)
+    if m_def is None:
+        print("No measure definition found for: {}".format(measure_name))
+        sys.exit()
+    agg, date = aggregation.aggregate_raw_measures(m_def)
     if agg is None:
-        print("No aggregation were made for {}".format(measure_name))
+        print("No aggregation were made for: {}".format(measure_name))
     else:
-        print("{} aggregations saved until {}".format(len(agg), date))
+        print("{} aggregations saved until: {}".format(len(agg), date))
+
+
+@dacc.cli.command("compute-all-aggregations")
+def compute_all_aggregations():
+    """Compute aggregation for all measures"""
+
+    m_defs = db.session.query(MeasureDefinition).all()
+    for m_def in m_defs:
+        agg, date = aggregation.aggregate_raw_measures(m_def)
+        if agg is None:
+            print("No aggregation were made for: {}".format(m_def.name))
+        else:
+            print(
+                "{} aggregations saved until {} for: {}".format(
+                    len(agg), date, m_def.name
+                )
+            )
