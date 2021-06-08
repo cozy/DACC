@@ -36,7 +36,7 @@ def insert_random_raw_measures(n_measures, n_days, starting_day):
     try:
         starting_day = parse(starting_day)
         days = [starting_day + timedelta(days=i) for i in range(n_days)]
-        defs = models.MeasuresDefinition.query.all()
+        defs = models.MeasureDefinition.query.all()
         if not defs:
             print("Please insert measures definition first.")
             return
