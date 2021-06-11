@@ -32,7 +32,7 @@ def generate_groups(measure_definition):
     return (group1, group2, group3)
 
 
-def insert_random_raw_measures(n_measures, n_days, starting_day):
+def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
     try:
         starting_day = parse(starting_day)
         days = [starting_day + timedelta(days=i) for i in range(n_days)]
@@ -42,10 +42,18 @@ def insert_random_raw_measures(n_measures, n_days, starting_day):
             return
 
         for i in range(n_measures):
-            random_def = random.choice(defs)
-            group1, group2, group3 = generate_groups(random_def)
+            if measure_name is None:
+                m_def = random.choice(defs)
+                _measure_name = m_def.name
+            else:
+                _measure_name = measure_name
+                m_def = models.MeasureDefinition.query_by_name(measure_name)
+                if m_def is None:
+                    print("Measure not found: {}".format(measure_name))
+                    return
+            group1, group2, group3 = generate_groups(m_def)
             measure = {
-                "measureName": random_def.name,
+                "measureName": _measure_name,
                 "value": random.randint(0, 100),
                 "startDate": random.choice(days),
                 "createdByApp": random.choice(APPS),
