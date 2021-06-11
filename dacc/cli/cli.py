@@ -3,7 +3,7 @@ import sys
 import os
 from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition
+from dacc.models import MeasureDefinition, FilteredAggregation
 from sqlalchemy import exc
 
 
@@ -16,8 +16,10 @@ def reset_tables():
             "This will remove ALL DATA in database. Are you sure?", abort=True
         )
         print("Reset all tables in database...")
+
         db.drop_all()
         db.create_all()
+        FilteredAggregation.create()
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))

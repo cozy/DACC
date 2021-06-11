@@ -1,7 +1,14 @@
 from dacc import db
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
+from sqlalchemy.schema import DropTable
+from sqlalchemy.ext.compiler import compiles
+
+
+@compiles(DropTable, "postgresql")
+def _compile_drop_table(element, compiler, **kwargs):
+    return compiler.visit_drop_table(element) + " CASCADE"
 
 
 class RawMeasure(db.Model):
@@ -57,7 +64,7 @@ class MeasureDefinition(db.Model):
     description = db.Column(db.String)
     aggregation_period = db.Column(db.String(50))
     execution_frequency = db.Column(db.String(50))
-    contribution_threshold = db.Column(db.Integer)
+    aggregation_threshold = db.Column(db.Integer, server_default=text("5"))
     access_app = db.Column(db.Boolean)
     access_public = db.Column(db.Boolean)
     aggregation_date = relationship(
@@ -76,7 +83,6 @@ class MeasureDefinition(db.Model):
 
 
 class AggregationDate(db.Model):
-    # TODO: Add integriy check with measure definition ?
     id = db.Column(db.Integer, primary_key=True)
     measure_definition_id = db.Column(
         db.Integer, db.ForeignKey("measure_definition.id")
@@ -125,3 +131,22 @@ class Aggregation(db.Model):
             )
             .first()
         )
+
+
+class FilteredAggregation:
+    def create():
+        select_query_sql = """SELECT * FROM aggregation as agg
+                          WHERE agg.count >= 
+                          (SELECT m.aggregation_threshold
+                            FROM measure_definition as m 
+                            WHERE m.name = agg.measure_name)
+                        """
+        create_view_sql = (
+            "CREATE MATERIALIZED VIEW filtered_aggregation AS ({})".format(
+                select_query_sql
+            )
+        )
+
+        stmt = text(create_view_sql)
+        db.session.execute(stmt)
+        db.session.commit()
