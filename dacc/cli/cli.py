@@ -19,7 +19,7 @@ def reset_tables():
 
         db.drop_all()
         db.create_all()
-        FilteredAggregation.create()
+        create_filtered_aggregation_view()
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
@@ -140,3 +140,19 @@ def compute_all_aggregations(force):
                     len(agg), date, m_def.name
                 )
             )
+
+
+@dacc.cli.command("create-filtered-aggregation-view")
+def create_filtered_aggregation_view():
+    try:
+        FilteredAggregation.create()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("update-filtered-aggregation-view")
+def refresh_filtered_aggregation_view():
+    try:
+        FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))

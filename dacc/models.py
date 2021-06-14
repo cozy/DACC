@@ -150,3 +150,9 @@ class FilteredAggregation:
         stmt = text(create_view_sql)
         db.session.execute(stmt)
         db.session.commit()
+
+    def udpate():
+        query_sql = "REFRESH MATERIALIZED VIEW filtered_aggregation;"
+        stmt = text(query_sql)
+        db.session.execute(stmt)
+        db.session.commit()
