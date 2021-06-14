@@ -19,7 +19,7 @@ def reset_tables():
 
         db.drop_all()
         db.create_all()
-        create_filtered_aggregation_view()
+        FilteredAggregation.create()
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
