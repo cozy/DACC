@@ -4,7 +4,11 @@ from dacc import db
 
 def insert_raw_measure(measure):
     try:
-        group1 = measure["groups"][0] if "groups" in measure else None
+        group1 = (
+            measure["groups"][0]
+            if ("groups" in measure and len(measure["groups"]) > 0)
+            else None
+        )
         group2 = (
             measure["groups"][1]
             if "groups" in measure and len(measure["groups"]) > 1

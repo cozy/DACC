@@ -142,3 +142,9 @@ $ ./scripts/nextversion.sh 1.2.3
 ```
 
 This script will update version number, adding `-dev` suffix but it is your responsibility to add, commit & push the change.
+
+## Database migration
+
+When the database needs a migration, i.e. when the structure changed, for instance a new column, one needs to run `flask db migrate`. A migration script is then generated, that must be commited.
+
+It is then possible to run `flask db update` on the DACC server to automatically handle the database migration. 

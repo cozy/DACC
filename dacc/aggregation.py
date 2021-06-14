@@ -187,7 +187,7 @@ def compute_partial_aggregates(
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
-def aggregate_raw_measures(m_definition: MeasureDefinition):
+def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
     """Aggregate raw measures on a time period and save them in the
     Aggregation table.
 
@@ -207,7 +207,7 @@ def aggregate_raw_measures(m_definition: MeasureDefinition):
             # No measures to aggregate
             logging.info("No new measure for {}".format(m_definition.name))
             return (None, None)
-        if not validate.is_execution_frequency_respected(
+        if not force and not validate.is_execution_frequency_respected(
             start_date, m_definition
         ):
             # This execution is too close from the last run
@@ -217,14 +217,15 @@ def aggregate_raw_measures(m_definition: MeasureDefinition):
                 )
             )
             return (None, None)
-
         measure_name = m_definition.name
         grouped_measures = aggregate_measures_from_db(
             measure_name, start_date, end_date
         )
         for gm in grouped_measures:
-            agg = Aggregation.query_aggregate_by_measure(measure_name, gm)
-            if agg is None:
+            existing_agg = Aggregation.query_aggregate_by_measure(
+                measure_name, gm
+            )
+            if existing_agg is None:
                 # This will be an insert in the Aggregation table
                 agg = Aggregation(
                     measure_name=measure_name,
@@ -245,7 +246,9 @@ def aggregate_raw_measures(m_definition: MeasureDefinition):
             else:
                 # This will be an update in the Aggregation table
                 # XXX - This might be improved by avoiding a new query
-                agg = compute_partial_aggregates(measure_name, agg, gm)
+                agg = compute_partial_aggregates(
+                    measure_name, existing_agg, gm
+                )
                 db.session.query(Aggregation).filter(
                     Aggregation.id == agg.id
                 ).update(

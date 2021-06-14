@@ -3,7 +3,7 @@ import sys
 import os
 from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition
+from dacc.models import MeasureDefinition, FilteredAggregation
 from sqlalchemy import exc
 
 
@@ -16,8 +16,10 @@ def reset_tables():
             "This will remove ALL DATA in database. Are you sure?", abort=True
         )
         print("Reset all tables in database...")
+
         db.drop_all()
         db.create_all()
+        create_filtered_aggregation_view()
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
@@ -96,22 +98,26 @@ def insert_fixtures_definition(fixture_type):
 @click.option(
     "--starting-day", "starting_day", default="2021-05-01", show_default=True
 )
-def insert_fixtures(n_measures, days, starting_day):
+@click.option("-m", "--measure_name")
+def insert_fixtures(n_measures, days, starting_day, measure_name):
     """Insert random measures in database"""
 
-    fixtures.insert_random_raw_measures(n_measures, days, starting_day)
+    fixtures.insert_random_raw_measures(
+        n_measures, days, starting_day, measure_name
+    )
 
 
 @dacc.cli.command("compute-aggregation")
 @click.argument("measure_name")
-def compute_aggregation(measure_name):
+@click.option("-f", "--force", default=False, show_default=True, type=bool)
+def compute_aggregation(measure_name, force):
     """Compute aggregation for a measure"""
 
     m_def = MeasureDefinition.query_by_name(measure_name)
     if m_def is None:
         print("No measure definition found for: {}".format(measure_name))
         sys.exit()
-    agg, date = aggregation.aggregate_raw_measures(m_def)
+    agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
     if agg is None:
         print("No aggregation were made for: {}".format(measure_name))
     else:
@@ -119,12 +125,13 @@ def compute_aggregation(measure_name):
 
 
 @dacc.cli.command("compute-all-aggregations")
-def compute_all_aggregations():
+@click.option("-f", "--force", default=False, show_default=True, type=bool)
+def compute_all_aggregations(force):
     """Compute aggregation for all measures"""
 
     m_defs = db.session.query(MeasureDefinition).all()
     for m_def in m_defs:
-        agg, date = aggregation.aggregate_raw_measures(m_def)
+        agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
         if agg is None:
             print("No aggregation were made for: {}".format(m_def.name))
         else:
@@ -133,3 +140,19 @@ def compute_all_aggregations():
                     len(agg), date, m_def.name
                 )
             )
+
+
+@dacc.cli.command("create-filtered-aggregation-view")
+def create_filtered_aggregation_view():
+    try:
+        FilteredAggregation.create()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("update-filtered-aggregation-view")
+def refresh_filtered_aggregation_view():
+    try:
+        FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
