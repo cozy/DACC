@@ -22,6 +22,8 @@ sentry_sdk.init(
     release="dacc@{}".format(__version__),
 )
 
+dacc_token = configdata.get("auth:token", {})
+
 db = SQLAlchemy(dacc)
 migrate = Migrate(dacc, db)
 

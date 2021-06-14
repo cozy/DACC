@@ -57,6 +57,26 @@ $ curl -s http://localhost:5000/status | jq -r '.global_status'
 ok
 ```
 
+## Add a measure
+
+You can query the `/measure` endpoint:
+
+```
+$ curl -X POST -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/measure -d @measure.json
+HTTP/1.0 201 CREATED
+Content-Type: application/json
+Content-Length: 12
+Server: Werkzeug/2.0.1 Python/3.8.10
+Date: Sun, 30 May 2021 13:22:24 GMT
+
+{
+  "ok": "true"
+}
+
+```
+
+The `token` is the one specified in your remote-doctype to authenticate the stack. Note this is not required on your local machine for dev.
+
 ## Development
 
 ### Build and launch docker dev environment
