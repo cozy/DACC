@@ -57,6 +57,19 @@ $ curl -s http://localhost:5000/status | jq -r '.global_status'
 ok
 ```
 
+## Authentication
+
+Some routes need authentication. Some commands are available to set up token-based authentication:
+
+```
+flask add-token # Add a new token linked to an organization
+flask get-token # Get the list of existing tokens
+flask update-token # Update a token linked to an organization
+flask delete-org # Remove an organization
+```
+
+
+
 ## Add a measure
 
 You can query the `/measure` endpoint:
@@ -75,7 +88,7 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-The `token` is the one specified in your remote-doctype to authenticate the stack. Note this is not required on your local machine for dev.
+The `token` is the one specified in your remote-doctype to authenticate the stack. See the [authentication](#authentication) section
 
 ## Development
 

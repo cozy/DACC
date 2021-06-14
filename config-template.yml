@@ -7,5 +7,3 @@ database:
 sentry:
   dsn: https://6fca9ff7c68944438d0c9799d19fcef2@errors.cozycloud.cc/5
   traces_sample_rate: 1.0
-auth:
-  token: ''

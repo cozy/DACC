@@ -11,6 +11,19 @@ def _compile_drop_table(element, compiler, **kwargs):
     return compiler.visit_drop_table(element) + " CASCADE"
 
 
+class Auth(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    org = db.Column(db.String(100))
+    token = db.Column(db.String(200))
+
+    def query_by_org(org):
+        return db.session.query(Auth).filter(Auth.org == org).first()
+
+    def query_all_tokens():
+        tokens = db.session.query(Auth.token).all()
+        return [t for (t,) in tokens]
+
+
 class RawMeasure(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_name = db.Column(db.String(100))

@@ -3,7 +3,7 @@ import sys
 import os
 from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition, FilteredAggregation
+from dacc.models import MeasureDefinition, FilteredAggregation, Auth
 from sqlalchemy import exc
 import requests
 from urllib.parse import urljoin
@@ -189,5 +189,50 @@ def create_filtered_aggregation_view():
 def refresh_filtered_aggregation_view():
     try:
         FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("add-token")
+@click.argument("org")
+@click.argument("token")
+def add_token(org, token):
+    try:
+        auth = Auth(org=org, token=token)
+        db.session.add(auth)
+        db.session.commit()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("get-token")
+@click.argument("org")
+def get_token(org):
+    try:
+        auth = Auth.query_by_org(org)
+        print("Token for {} is: {}".format(org, auth.token))
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("update-token")
+@click.argument("org")
+@click.argument("token")
+def update_token(org, token):
+    try:
+        auth = Auth.query_by_org(org)
+        auth.token = token
+        db.session.commit()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.command("delete-org")
+@click.argument("org")
+def delete_org(org):
+    try:
+        auth = Auth.query_by_org(org)
+        db.session.delete(auth)
+        db.session.commit()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))

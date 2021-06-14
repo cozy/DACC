@@ -1,4 +1,5 @@
-from dacc import dacc, db, dacc_token, validate, insertion
+from dacc import dacc, db, validate, insertion
+from dacc.models import Auth
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_httpauth import HTTPTokenAuth
@@ -12,7 +13,8 @@ def handle_error(err, code):
 
 @auth.verify_token
 def verify_token(token):
-    return dacc_token == token
+    tokens = Auth.query_all_tokens()
+    return token in tokens
 
 
 @dacc.errorhandler(HTTPException)
