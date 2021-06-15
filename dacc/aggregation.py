@@ -44,7 +44,7 @@ def aggregate_measures_from_db(
             func.min(RawMeasure.value).label("min"),
             func.max(RawMeasure.value).label("max"),
             func.avg(RawMeasure.value).label("avg"),
-            func.stddev(RawMeasure.value).label("std"),
+            func.coalesce(func.stddev(RawMeasure.value), 0).label("std"),
         )
         .filter(
             RawMeasure.measure_name == measure_name,

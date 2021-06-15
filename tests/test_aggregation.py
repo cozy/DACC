@@ -61,6 +61,8 @@ def test_aggregations():
         mins = df_raw.groupby(columns, as_index=False).min()
         maxs = df_raw.groupby(columns, as_index=False).max()
         avgs = df_raw.groupby(columns, as_index=False).mean()
+        stds = df_raw.groupby(columns, as_index=False).std()
+        stds = stds.fillna(0)
 
         assert len(aggregated_rows) == len(sums)
         for i, _ in enumerate(aggregated_rows):
@@ -68,7 +70,12 @@ def test_aggregations():
             assert aggregated_rows[i].count == counts.value[i]
             assert aggregated_rows[i].min == mins.value[i]
             assert aggregated_rows[i].max == maxs.value[i]
-            assert aggregated_rows[i].avg == avgs.value[i]
+            assert round(float(aggregated_rows[i].avg), 4) == round(
+                avgs.value[i], 4
+            )
+            assert round(float(aggregated_rows[i].std), 2) == round(
+                stds.value[i], 2
+            )
 
 
 def test_aggregate_dates():

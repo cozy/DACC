@@ -116,7 +116,7 @@ class Aggregation(db.Model):
     min = db.Column(db.Numeric(precision=12, scale=2))
     max = db.Column(db.Numeric(precision=12, scale=2))
     avg = db.Column(db.Numeric(precision=12, scale=2))
-    std = db.Column(db.Numeric(precision=12, scale=2))
+    std = db.Column(db.Numeric(precision=12, scale=2), default=0)
 
     def query_aggregate_by_measure(measure_name, m):
         return (
