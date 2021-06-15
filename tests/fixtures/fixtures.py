@@ -32,8 +32,11 @@ def generate_groups(measure_definition):
     return (group1, group2, group3)
 
 
-def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
+def generate_random_raw_measures(
+    n_measures, n_days, starting_day, measure_name
+):
     try:
+        measures = []
         starting_day = parse(starting_day)
         days = [starting_day + timedelta(days=i) for i in range(n_days)]
         defs = models.MeasureDefinition.query.all()
@@ -55,8 +58,8 @@ def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
             measure = {
                 "measureName": _measure_name,
                 "value": random.randint(0, 100),
-                "startDate": random.choice(days),
-                "createdByApp": random.choice(APPS),
+                "startDate": random.choice(days).isoformat(),
+                "createdBy": random.choice(APPS),
                 "groups": [],
             }
             if group1:
@@ -66,10 +69,19 @@ def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
             if group3:
                 measure["groups"].append(group3)
 
-            insertion.insert_raw_measure(measure)
-            print("Raw measure inserted : {}".format(measure))
+            measures.append(measure)
+        return measures
     except Exception as e:
         print("Exception during fixture insertion: " + repr(e))
+
+
+def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
+    measures = generate_random_raw_measures(
+        n_measures, n_days, starting_day, measure_name
+    )
+    for measure in measures:
+        insertion.insert_raw_measure(measure)
+        print("Raw measure inserted : {}".format(measure))
 
 
 def insert_from_fixture_file(file_name):

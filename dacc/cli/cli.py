@@ -5,6 +5,8 @@ from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
 from dacc.models import MeasureDefinition, FilteredAggregation
 from sqlalchemy import exc
+import requests
+from urllib.parse import urljoin
 
 
 @dacc.cli.command("reset-all-tables")
@@ -105,6 +107,39 @@ def insert_fixtures(n_measures, days, starting_day, measure_name):
     fixtures.insert_random_raw_measures(
         n_measures, days, starting_day, measure_name
     )
+
+
+@dacc.cli.command("send-random-measures")
+@click.argument("dacc_address")
+@click.option("-n", "n_measures", default=1, show_default=True)
+@click.option("-d", "--days", default=1, show_default=True)
+@click.option(
+    "--starting-day", "starting_day", default="2021-05-01", show_default=True
+)
+@click.option("-m", "--measure_name")
+@click.option("-t", "--token")
+def send_random_measures(
+    dacc_address, n_measures, days, starting_day, measure_name, token
+):
+    """Send random measures to a dacc server"""
+
+    measures = fixtures.generate_random_raw_measures(
+        n_measures, days, starting_day, measure_name
+    )
+
+    for i, measure in enumerate(measures):
+        url = urljoin(dacc_address, "/measure")
+        r = requests.post(url, json=measure)
+        if token:
+            headers = {}
+            headers["Authorization"] = "Bearer {token}"
+            r.headers = headers
+        if r.status_code == 201:
+            print("measure {} sent: {}".format((i + 1), measure))
+        if r.status_code != 201:
+            r.raise_for_status()
+            print(r.text)
+    print("All measures sent!")
 
 
 @dacc.cli.command("compute-aggregation")
