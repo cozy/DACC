@@ -227,16 +227,15 @@ def get_token(org):
         print("Command failed: {}".format(repr(err)))
 
 
-@token.command("update-token")
+@token.command("update")
 @click.argument("org")
-@click.argument("token")
-def update_token(org, token):
+def update_token(org):
     """Update an authentication token for an org"""
     try:
         auth = Auth.query_by_org(org)
         auth.token = uuid.uuid4()
         db.session.commit()
-        print("Token updated for {}: {}".format(org, token))
+        print("Token updated for {}: {}".format(org, auth.token))
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
 
