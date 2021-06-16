@@ -1,10 +1,22 @@
 from dacc import dacc, db, validate, insertion
+from dacc.models import Auth
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
+from flask_httpauth import HTTPTokenAuth
+from dacc import cache
+
+auth = HTTPTokenAuth(scheme="Bearer")
 
 
 def handle_error(err, code):
     return jsonify({"error": str(err)}), code
+
+
+@auth.verify_token
+@cache.memoize(timeout=60)  # Cache for 1 minute
+def verify_token(token):
+    auth = Auth.query_by_token(token)
+    return auth.org if auth else None
 
 
 @dacc.errorhandler(HTTPException)
@@ -17,6 +29,7 @@ def handle_exception(e):
 
 
 @dacc.route("/measure", methods=["POST"])
+@auth.login_required
 def add_raw_measure():
     """Add a raw measure to the database
 

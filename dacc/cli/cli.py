@@ -3,10 +3,11 @@ import sys
 import os
 from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition, FilteredAggregation
+from dacc.models import MeasureDefinition, FilteredAggregation, Auth
 from sqlalchemy import exc
 import requests
 from urllib.parse import urljoin
+import uuid
 
 
 @dacc.cli.command("reset-all-tables")
@@ -179,6 +180,7 @@ def compute_all_aggregations(force):
 
 @dacc.cli.command("create-filtered-aggregation-view")
 def create_filtered_aggregation_view():
+    """Create the filtered aggregation view"""
     try:
         FilteredAggregation.create()
     except Exception as err:
@@ -187,7 +189,64 @@ def create_filtered_aggregation_view():
 
 @dacc.cli.command("update-filtered-aggregation-view")
 def refresh_filtered_aggregation_view():
+    """Refresh the filtered aggregation view"""
     try:
         FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@dacc.cli.group()
+def token():
+    """Token management commands."""
+    pass
+
+
+@token.command("create")
+@click.argument("org")
+def create_token(org):
+    """Create an authentication token for an org"""
+    try:
+        token = uuid.uuid4()
+        auth = Auth(org=org, token=token)
+        db.session.add(auth)
+        db.session.commit()
+        print("Token created for {}: {}".format(org, token))
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@token.command("get")
+@click.argument("org")
+def get_token(org):
+    """Get an authentication token for an org"""
+    try:
+        auth = Auth.query_by_org(org)
+        print(auth.token)
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@token.command("update")
+@click.argument("org")
+def update_token(org):
+    """Update an authentication token for an org"""
+    try:
+        auth = Auth.query_by_org(org)
+        auth.token = uuid.uuid4()
+        db.session.commit()
+        print("Token updated for {}: {}".format(org, auth.token))
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+
+
+@token.command("delete-org")
+@click.argument("org")
+def delete_org(org):
+    """Delete an org with its associated token"""
+    try:
+        auth = Auth.query_by_org(org)
+        db.session.delete(auth)
+        db.session.commit()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
