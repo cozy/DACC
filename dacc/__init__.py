@@ -5,6 +5,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_migrate import Migrate
+from flask_caching import Cache
 
 configdata = Config()
 dacc = Flask(__name__)
@@ -22,6 +23,7 @@ sentry_sdk.init(
     release="dacc@{}".format(__version__),
 )
 
+cache = Cache(dacc, config={"CACHE_TYPE": "simple"})
 
 db = SQLAlchemy(dacc)
 migrate = Migrate(dacc, db)

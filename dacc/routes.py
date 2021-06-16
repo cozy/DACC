@@ -3,6 +3,7 @@ from dacc.models import Auth
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_httpauth import HTTPTokenAuth
+from dacc import cache
 
 auth = HTTPTokenAuth(scheme="Bearer")
 
@@ -12,6 +13,7 @@ def handle_error(err, code):
 
 
 @auth.verify_token
+@cache.memoize(timeout=60)  # Cache for 1 minute
 def verify_token(token):
     auth = Auth.query_by_token(token)
     return auth.org if auth else None
