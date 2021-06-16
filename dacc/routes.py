@@ -13,8 +13,8 @@ def handle_error(err, code):
 
 @auth.verify_token
 def verify_token(token):
-    tokens = Auth.query_all_tokens()
-    return token in tokens
+    auth = Auth.query_by_token(token)
+    return auth.org if auth else None
 
 
 @dacc.errorhandler(HTTPException)

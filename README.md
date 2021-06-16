@@ -62,10 +62,10 @@ ok
 Some routes need authentication. Some commands are available to set up token-based authentication:
 
 ```
-flask add-token # Add a new token linked to an organization
-flask get-token # Get the list of existing tokens
-flask update-token # Update a token linked to an organization
-flask delete-org # Remove an organization
+flask token create # Create a new token linked to an organization
+flask token get # Get the list of existing tokens
+flask token update # Update a token linked to an organization
+flask token delete-org # Remove an organization
 ```
 
 

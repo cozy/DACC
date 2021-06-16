@@ -16,12 +16,13 @@ class Auth(db.Model):
     org = db.Column(db.String(100))
     token = db.Column(db.String(200))
 
+    @staticmethod
     def query_by_org(org):
         return db.session.query(Auth).filter(Auth.org == org).first()
 
-    def query_all_tokens():
-        tokens = db.session.query(Auth.token).all()
-        return [t for (t,) in tokens]
+    @staticmethod
+    def query_by_token(token):
+        return db.session.query(Auth).filter(Auth.token == token).first()
 
 
 class RawMeasure(db.Model):
