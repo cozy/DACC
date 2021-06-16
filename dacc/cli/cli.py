@@ -10,14 +10,23 @@ from urllib.parse import urljoin
 import uuid
 
 
+def abort_if_false(ctx, param, value):
+    if not value:
+        ctx.abort()
+
+
 @dacc.cli.command("reset-all-tables")
+@click.option(
+    "--yes",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="This will remove ALL DATA in database. Are you sure?",
+)
 def reset_tables():
     """Reset all tables in database"""
 
     try:
-        click.confirm(
-            "This will remove ALL DATA in database. Are you sure?", abort=True
-        )
         print("Reset all tables in database...")
 
         db.drop_all()
