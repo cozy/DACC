@@ -1,13 +1,14 @@
 import click
 import sys
 import os
+import uuid
 from dacc import dacc, db, aggregation, consts
 from tests.fixtures import fixtures
 from dacc.models import MeasureDefinition, FilteredAggregation, Auth
 from sqlalchemy import exc
 import requests
 from urllib.parse import urljoin
-import uuid
+from tabulate import tabulate
 
 
 def abort_if_false(ctx, param, value):
@@ -60,8 +61,18 @@ def show_table(table_name):
     """Show a table content"""
 
     try:
-        result = db.session.execute("SELECT * FROM {};".format(table_name))
-        print(result.fetchall())
+        query_column_names = """
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_name='{}';
+                            """.format(
+            table_name
+        )
+        column_names = db.session.execute(query_column_names).fetchall()
+        column_names = [col[0] for col in column_names]
+        query_table = "SELECT * FROM {};".format(table_name)
+        table_content = db.session.execute(query_table).fetchall()
+        print(tabulate(table_content, headers=column_names))
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
 
