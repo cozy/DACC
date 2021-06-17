@@ -154,10 +154,13 @@ def send_random_measures(
 
 @dacc.cli.command("compute-aggregation")
 @click.argument("measure_name")
-@click.option("-f", "--force", default=False, show_default=True, type=bool)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+)
 def compute_aggregation(measure_name, force):
     """Compute aggregation for a measure"""
-
     m_def = MeasureDefinition.query_by_name(measure_name)
     if m_def is None:
         print("No measure definition found for: {}".format(measure_name))
@@ -170,7 +173,11 @@ def compute_aggregation(measure_name, force):
 
 
 @dacc.cli.command("compute-all-aggregations")
-@click.option("-f", "--force", default=False, show_default=True, type=bool)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+)
 def compute_all_aggregations(force):
     """Compute aggregation for all measures"""
 
