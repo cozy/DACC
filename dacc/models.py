@@ -38,6 +38,7 @@ class RawMeasure(db.Model):
     group3 = db.Column(JSONB(none_as_null=True))
 
     # TODO: indexing on last_updated might be good
+    @staticmethod
     def query_by_name(measure_name):
         return (
             db.session.query(
@@ -53,6 +54,7 @@ class RawMeasure(db.Model):
             .all()
         )
 
+    @staticmethod
     def query_most_recent_date(measure_name, from_date):
         return (
             db.session.query(RawMeasure.last_updated)
@@ -85,6 +87,7 @@ class MeasureDefinition(db.Model):
         "AggregationDate", uselist=False, back_populates="measure_definition"
     )
 
+    @staticmethod
     def query_by_name(name):
         return (
             db.session.query(MeasureDefinition)
@@ -92,6 +95,7 @@ class MeasureDefinition(db.Model):
             .first()
         )
 
+    @staticmethod
     def query_all_names():
         return db.session.query(MeasureDefinition.name).all()
 
@@ -106,6 +110,7 @@ class AggregationDate(db.Model):
         "MeasureDefinition", back_populates="aggregation_date"
     )
 
+    @staticmethod
     def query_by_name(measure_name):
         return (
             db.session.query(AggregationDate)
@@ -132,6 +137,7 @@ class Aggregation(db.Model):
     avg = db.Column(db.Numeric(precision=12, scale=2))
     std = db.Column(db.Numeric(precision=12, scale=2), default=0)
 
+    @staticmethod
     def query_aggregate_by_measure(measure_name, m):
         return (
             db.session.query(Aggregation)
@@ -148,6 +154,7 @@ class Aggregation(db.Model):
 
 
 class FilteredAggregation:
+    @staticmethod
     def create():
         select_query_sql = """SELECT * FROM aggregation as agg
                           WHERE agg.count >= 
@@ -165,6 +172,7 @@ class FilteredAggregation:
         db.session.execute(stmt)
         db.session.commit()
 
+    @staticmethod
     def udpate():
         query_sql = "REFRESH MATERIALIZED VIEW filtered_aggregation;"
         stmt = text(query_sql)
