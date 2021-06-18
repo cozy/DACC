@@ -81,8 +81,8 @@ class MeasureDefinition(db.Model):
     aggregation_period = db.Column(db.String(50))
     execution_frequency = db.Column(db.String(50))
     aggregation_threshold = db.Column(db.Integer, server_default=text("5"))
-    access_app = db.Column(db.Boolean)
-    access_public = db.Column(db.Boolean)
+    access_app = db.Column(db.Boolean, server_default=text("false"))
+    access_public = db.Column(db.Boolean, server_default=text("false"))
     aggregation_date = relationship(
         "AggregationDate",
         uselist=False,
