@@ -149,12 +149,16 @@ class Aggregation(db.Model):
 
 class FilteredAggregation:
     def create():
-        select_query_sql = """SELECT * FROM aggregation as agg
-                          WHERE agg.count >= 
-                          (SELECT m.aggregation_threshold
-                            FROM measure_definition as m 
-                            WHERE m.name = agg.measure_name)
-                        """
+        select_query_sql = """
+                            SELECT measure_name, start_date, created_by,
+                            group1::text, group2::text, group3::text,
+                            sum, count, count_not_zero, min, max, avg, std
+                            FROM aggregation as agg
+                            WHERE agg.count >= 
+                                (SELECT m.aggregation_threshold
+                                FROM measure_definition as m 
+                                WHERE m.name = agg.measure_name)
+                            """
         create_view_sql = (
             "CREATE MATERIALIZED VIEW filtered_aggregation AS ({})".format(
                 select_query_sql
