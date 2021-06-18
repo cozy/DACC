@@ -36,6 +36,7 @@ def reset_tables():
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("reset-table")
@@ -53,6 +54,7 @@ def reset_table(table_name):
         print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("show-table")
@@ -75,6 +77,7 @@ def show_table(table_name):
         print(tabulate(table_content, headers=column_names))
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("insert-definitions")
@@ -99,6 +102,7 @@ def insert_measure_definition(file_path):
         db.session.commit()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("insert-fixtures-from-file")
@@ -172,15 +176,20 @@ def send_random_measures(
 )
 def compute_aggregation(measure_name, force):
     """Compute aggregation for a measure"""
-    m_def = MeasureDefinition.query_by_name(measure_name)
-    if m_def is None:
-        print("No measure definition found for: {}".format(measure_name))
-        sys.exit()
-    agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
-    if agg is None:
-        print("No aggregation were made for: {}".format(measure_name))
-    else:
-        print("{} aggregations saved until: {}".format(len(agg), date))
+
+    try:
+        m_def = MeasureDefinition.query_by_name(measure_name)
+        if m_def is None:
+            print("No measure definition found for: {}".format(measure_name))
+            sys.exit()
+        agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
+        if agg is None:
+            print("No aggregation were made for: {}".format(measure_name))
+        else:
+            print("{} aggregations saved until: {}".format(len(agg), date))
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("compute-all-aggregations")
@@ -192,17 +201,21 @@ def compute_aggregation(measure_name, force):
 def compute_all_aggregations(force):
     """Compute aggregation for all measures"""
 
-    m_defs = db.session.query(MeasureDefinition).all()
-    for m_def in m_defs:
-        agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
-        if agg is None:
-            print("No aggregation were made for: {}".format(m_def.name))
-        else:
-            print(
-                "{} aggregations saved until {} for: {}".format(
-                    len(agg), date, m_def.name
+    try:
+        m_defs = db.session.query(MeasureDefinition).all()
+        for m_def in m_defs:
+            agg, date = aggregation.aggregate_raw_measures(m_def, force=force)
+            if agg is None:
+                print("No aggregation were made for: {}".format(m_def.name))
+            else:
+                print(
+                    "{} aggregations saved until {} for: {}".format(
+                        len(agg), date, m_def.name
+                    )
                 )
-            )
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("create-filtered-aggregation-view")
@@ -212,6 +225,7 @@ def create_filtered_aggregation_view():
         FilteredAggregation.create()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.command("update-filtered-aggregation-view")
@@ -221,6 +235,7 @@ def refresh_filtered_aggregation_view():
         FilteredAggregation.udpate()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @dacc.cli.group()
@@ -241,6 +256,7 @@ def create_token(org):
         print("Token created for {}: {}".format(org, token))
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @token.command("get")
@@ -252,6 +268,7 @@ def get_token(org):
         print(auth.token)
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @token.command("update")
@@ -265,6 +282,7 @@ def update_token(org):
         print("Token updated for {}: {}".format(org, auth.token))
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
 
 
 @token.command("delete-org")
@@ -277,3 +295,4 @@ def delete_org(org):
         db.session.commit()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
