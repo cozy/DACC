@@ -157,9 +157,10 @@ class FilteredAggregation:
     @staticmethod
     def create():
         select_query_sql = """
-                            SELECT measure_name, start_date, created_by,
+                            SELECT id, measure_name, start_date, created_by,
                             group1::text, group2::text, group3::text,
-                            sum, count, count_not_zero, min, max, avg, std
+                            sum, count, count_not_zero, min, max, avg, std,
+                            last_updated
                             FROM aggregation as agg
                             WHERE agg.count >= 
                                 (SELECT m.aggregation_threshold
