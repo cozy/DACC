@@ -84,7 +84,10 @@ class MeasureDefinition(db.Model):
     access_app = db.Column(db.Boolean)
     access_public = db.Column(db.Boolean)
     aggregation_date = relationship(
-        "AggregationDate", uselist=False, back_populates="measure_definition"
+        "AggregationDate",
+        uselist=False,
+        back_populates="measure_definition",
+        passive_deletes=True,
     )
 
     @staticmethod
@@ -103,7 +106,7 @@ class MeasureDefinition(db.Model):
 class AggregationDate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_definition_id = db.Column(
-        db.Integer, db.ForeignKey("measure_definition.id")
+        db.Integer, db.ForeignKey("measure_definition.id", ondelete="CASCADE")
     )
     last_aggregated_measure_date = db.Column(db.TIMESTAMP)
     measure_definition = relationship(
