@@ -79,6 +79,8 @@ def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
     measures = generate_random_raw_measures(
         n_measures, n_days, starting_day, measure_name
     )
+    if not measures:
+        return
     for measure in measures:
         insertion.insert_raw_measure(measure)
         print("Raw measure inserted : {}".format(measure))
