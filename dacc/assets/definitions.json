@@ -1,0 +1,119 @@
+{
+  "definitions": [
+    {
+      "id": 1,
+      "name": "session-duration",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "group1Key": "number_pages",
+      "group2Key": "session_type",
+      "description": "Durée d'une session utilisateur"
+    }, 
+    {
+      "id": 2,
+      "name": "connection-count-daily",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "aggregationPeriod": "day",
+      "group1Key": "device",
+      "description": "Nombre de connexions"
+    },
+    {
+      "id": 3,
+      "name": "navigation-action-daily",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "aggregationPeriod": "day",
+      "group1Key": "page",
+      "group2Key": "feature",
+      "group3Key": "params",
+      "description": "Actions de navigation"
+    },
+    {
+      "id": 4,
+      "name": "konnector-event-daily'",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "aggregationPeriod": "day",
+      "group1Key": "slug",
+      "group2Key": "event_type",
+      "group3Key": "status",
+      "description": "Evènements de connecteur"
+    },
+    {
+      "id": 5,
+      "name": "event-duration",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "group1Key": "start_event",
+      "group2Key": "end_event",
+      "group3Key": "params",
+      "description": "Durée entre évènements"
+    },
+    {
+      "id": 6,
+      "name": "challenge-launch-daily",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "aggregationPeriod": "day",
+      "group1Key": "challenge_id",
+      "description": "Nombre de défis lancés lors d'un challenge"
+    },
+    {
+      "id": 7,
+      "name": "quiz-stars",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "group1Key": "challenge_id",
+      "group2Key": "quiz_id",
+      "description": "Nombre d''étoiles obtenues lors d'un quiz"
+    },
+    {
+      "id": 8,
+      "name": "duel-launch",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "group1Key": "challenge_id",
+      "group2Key": "duel_id",
+      "description": "Lancement d''un duel"
+    },
+    {
+      "id": 9,
+      "name": "duel-status",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "createdBy": "ecolyo",
+      "executionFrequency": "day",
+      "group1Key": "challenge_id",
+      "group2Key": "status",
+      "description": "Succès ou échecs de duels"
+    }
+  ]
+}
+
+

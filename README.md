@@ -222,3 +222,11 @@ flask token delete-org # Remove an organization
 When the database needs a migration, i.e. when the structure changed, for instance a new column, one needs to run `flask db migrate`. A migration script is then generated, that must be commited.
 
 It is then possible to run `flask db update` on the DACC server to automatically handle the database migration. 
+
+## Insert definitions
+
+To insert measure definitions, simply run `flask insert-definitions-json`.
+By default, it takes the JSON file stored in `dacc/assets/definitions.json`, containing all definitions.
+
+
+

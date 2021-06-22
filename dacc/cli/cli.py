@@ -2,7 +2,8 @@ import click
 import sys
 import os
 import uuid
-from dacc import dacc, db, aggregation, consts
+import json
+from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
 from dacc.models import MeasureDefinition, FilteredAggregation, Auth
 from sqlalchemy import exc
@@ -93,12 +94,13 @@ def show_table(table_name):
 
 @dacc.cli.command("insert-definitions")
 @click.option(
-    "-f", "file_path", default="data/definitions.sql", show_default=True
+    "-f", "file_path", default="assets/definitions.sql", show_default=True
 )
 def insert_measure_definition(file_path):
-    """Insert measure definitions from file"""
+    """DEPRECATED - Insert measure definitions from file"""
 
     try:
+        print("DEPRECATED - prefer the insert-definitions-json command")
         path = os.path.join(consts.ROOT_PATH, file_path)
         f = open(path, "r")
         lines = f.readlines()
@@ -111,6 +113,45 @@ def insert_measure_definition(file_path):
                 print("IGNORED - Already exist.")
                 pass
         db.session.commit()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@dacc.cli.command("insert-definitions-json")
+@click.option(
+    "-f", "file_path", default="assets/definitions.json", show_default=True
+)
+def insert_measure_definition_json(file_path):
+    """Insert measure definitions from file"""
+    try:
+        path = os.path.join(consts.ROOT_PATH, file_path)
+        f = open(path, "r")
+        data = json.load(f)
+        definitions = data["definitions"]
+        for m_def in definitions:
+            db_def = MeasureDefinition.query.get(m_def.get("id"))
+            if db_def:
+                db_def.name = m_def.get("name")
+                db_def.org = (m_def.get("org"),)
+                db_def.created_by = m_def.get("createdBy")
+                db_def.group1_key = m_def.get("group1Key")
+                db_def.group2_key = m_def.get("group2Key")
+                db_def.group3_key = m_def.get("group3Key")
+                db_def.description = m_def.get("description")
+                db_def.aggregation_period = m_def.get("aggregationPeriod")
+                db_def.execution_frequency = m_def.get("executionFrequency")
+                db_def.aggregation_threshold = m_def.get(
+                    "aggregationThreshold"
+                )
+                db_def.access_app = m_def.get("accessApp")
+                db_def.access_public = m_def.get("accessPublic")
+            else:
+                insertion.insert_measure_definition(m_def)
+                print("New definition inserted: {}".format(m_def.get("name")))
+
+        db.session.commit()
+        print("Done.")
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()

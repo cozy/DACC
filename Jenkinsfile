@@ -34,7 +34,7 @@ pipeline {
             sh '''
               docker exec dacc_web flask reset-all-tables --yes
               # docker exec dacc_web flask create-filtered-aggregation-view
-              docker exec dacc_web flask insert-definitions
+              docker exec dacc_web flask insert-definitions-json
             '''
           }
         }
