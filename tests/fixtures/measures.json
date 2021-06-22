@@ -2,8 +2,10 @@
   "measureName": "connection-count-daily",
   "value": 6,
   "startDate": "2021-05-04",
-  "created_by": "test",
-  "group1": {
-    "device": "desktop"
-  }
+  "createdBy": "ecolyo",
+  "groups": [
+    {
+      "device": "desktop"
+    }
+  ]
 }
