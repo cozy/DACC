@@ -30,5 +30,5 @@ git add "${SCRIPT_DIR}/../dacc/version.py"
 git commit -m "chore: Bump version to ${NEXTVERSION}-dev"
 
 echo "Pushing changes to repo"
-git push
+git push --set-upstream origin master
 git push --tags

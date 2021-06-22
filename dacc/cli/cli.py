@@ -39,6 +39,17 @@ def reset_tables():
         raise click.Abort()
 
 
+@dacc.cli.command("create-all-tables")
+def create_tables():
+    """Create all tables in database"""
+    try:
+        db.create_all()
+        print("Done.")
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
 @dacc.cli.command("reset-table")
 @click.argument("table_name")
 def reset_table(table_name):
