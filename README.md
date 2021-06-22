@@ -1,10 +1,10 @@
 # DACC
 
 The Data Aggregator Cross Cozy (DACC)
+# Setup
 
-## Setup
 
-### Install
+## Install
 
 To setup the environement and install dependencies, simply run:
 
@@ -12,7 +12,7 @@ To setup the environement and install dependencies, simply run:
 ./mkenv.sh
 ```
 
-### Config
+## Config
 
 Copy the template into a new config file:
 
@@ -29,6 +29,155 @@ Then, edit `config.yml` to suit your needs.
 source venv/bin/activate
 flask run
 ```
+
+# API 
+## Add a measure
+
+You can query the `/measure` endpoint to add a raw measure:
+
+```
+$ curl -X POST -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/measure -d @measure.json
+HTTP/1.0 201 CREATED
+Content-Type: application/json
+Content-Length: 12
+Server: Werkzeug/2.0.1 Python/3.8.10
+Date: Sun, 30 May 2021 13:22:24 GMT
+
+{
+  "ok": "true"
+}
+
+```
+
+The `token` is the one specified in the remote-doctype to authenticate the stack. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to automatically get the correct token from the stack.
+
+Here is an example of a valid measure:
+```
+{
+  "measureName": "connection-count-daily",
+  "value": 6,
+  "startDate": "2021-05-04",
+  "createdBy": "ecolyo",
+  "groups": [
+    {
+      "device": "desktop"
+    }
+  ]
+}
+```
+
+The expected fields are the following:
+* `measureName`: {string} the name of the measure. It must match an existing measure name on the DACC server.
+* `value`: {number} the measured value. It can be 0 but never `null`.
+* `startDate`: {date} the starting date of the measure. It must be set in relation with the `aggregationPeriod` for this measure. 
+* `createdBy`: {string} the application that produced the measure.
+* `groups`: {Array} a list of groups, used to group measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. For example, `{"device": "desktop"}`. Note the `groups` length cannot exceed 3 and the order matters: the first key entry must match the `group1_key` of the measure definition, and so on. 
+
+
+## Measure definition
+
+A measure is defined by the following fields: 
+* `name`: {string} the name of the measure. It must indicate what is measured and should include the aggregation period, if relevant, e.g. "connexion-daily", "konnector-error-monthly", etc.
+* `org`: {string} the organization defining this measure.
+* `group1_key`: {string}: the first grouping key. 
+* `group2_key`: {string}: the second grouping key. 
+* `group3_key`: {string}: the third grouping key.
+* `description`: {string}: a human-readable description of the measure.
+* `aggregation_period`: {string}: the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
+* `execution_frequency`: {string}: the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
+* `access_app`: {boolean}: whether or not the result shouold be accessible from the producing app.
+* `access_public`: {boolean}: whether or not the result should be accessible by any requesting organization.
+
+Note there is no public API to insert a new definition. For security purposes, Cozy restricts this possibility and carefully evaluates each new measure definition to accept it or not.
+
+
+# Development
+
+## Build and launch docker dev environment
+
+To launch DACC application in developement environment with a dedicated PostgreSQL
+database in a docker environment:
+
+- Create `.env` development file containing
+
+```
+FLASK_ENV=development
+FLASK_RUN_HOST=0.0.0.0
+FLASK_RUN_PORT=5000
+PORT=5000
+```
+
+- Copy `config-template.yml` to `config.yml` (no need to change anything for dev)
+
+```
+$ cp config-template.yml config.yml
+```
+
+- Build app image and launch PostgreSQL and DACC
+
+```
+docker-compose up
+```
+
+The application should start in development environment with auto-reloading.
+You can also add `-d` option if you prefer to launch it in background
+
+## Execute tests
+
+To execute tests while your docker dev environment is running, simply run
+
+```
+$ docker exec dacc_web pytest
+```
+
+## Docker dev environment stop & cleanup
+
+To stop dev environment containers, run the following commands:
+
+```
+$ docker-compose down -v
+```
+
+To delete postgresql volumes, once stopped, use:
+
+```
+sudo rm -rf volumes
+```
+
+## Managing versions
+
+DACC uses [semantic versioning](https://semver.org/), that is versions are in the form `<major>.<minor>.<patch>`.
+
+- `<major>` is updated when there is breaking API changes
+- `<minor>` is updated on feature addition
+- `<patch>` is updated on backward-compatible bug fixes
+
+### Releasing a new version
+
+The script `scripts/releaseversion.sh` will release a new production version:
+- Remove the `-dev` suffix to current version
+- Commit & tag production version
+- Bump to next development release (bumping `<patch>`, ready for next bugfix)
+- Commit next development release
+- Push commits & tags
+
+```
+$ ./scripts/releaseversion.sh
+```
+
+### Updating version number
+
+Each time you introduce new features, you need to manually increase `<minor>` in version number (and reset patch to 0) and each time you introduce backward-incompatible API change, you need to bump `<major>` and reset minor and patch to 0.
+
+To manually change version, use the script `scripts/nextversion.sh`
+
+```
+$ ./scripts/nextversion.sh 1.2.3
+```
+
+This script will update version number, adding `-dev` suffix but it is your responsibility to add, commit & push the change.
+
+# Administration
 
 ## Healthchecks
 
@@ -67,114 +216,6 @@ flask token get # Get the list of existing tokens
 flask token update # Update a token linked to an organization
 flask token delete-org # Remove an organization
 ```
-
-
-
-## Add a measure
-
-You can query the `/measure` endpoint:
-
-```
-$ curl -X POST -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/measure -d @measure.json
-HTTP/1.0 201 CREATED
-Content-Type: application/json
-Content-Length: 12
-Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 13:22:24 GMT
-
-{
-  "ok": "true"
-}
-
-```
-
-The `token` is the one specified in your remote-doctype to authenticate the stack. See the [authentication](#authentication) section
-
-## Development
-
-### Build and launch docker dev environment
-
-To launch DACC application in developement environment with a dedicated PostgreSQL
-database in a docker environment:
-
-- Create `.env` development file containing
-
-```
-FLASK_ENV=development
-FLASK_RUN_HOST=0.0.0.0
-FLASK_RUN_PORT=5000
-PORT=5000
-```
-
-- Copy `config-template.yml` to `config.yml` (no need to change anything for dev)
-
-```
-$ cp config-template.yml config.yml
-```
-
-- Build app image and launch PostgreSQL and DACC
-
-```
-docker-compose up
-```
-
-The application should start in development environment with auto-reloading.
-You can also add `-d` option if you prefer to launch it in background
-
-### Execute tests
-
-To execute tests while your docker dev environment is running, simply run
-
-```
-$ docker exec dacc_web pytest
-```
-
-### Docker dev environment stop & cleanup
-
-To stop dev environment containers, run the following commands:
-
-```
-$ docker-compose down -v
-```
-
-To delete postgresql volumes, once stopped, use:
-
-```
-sudo rm -rf volumes
-```
-
-### Managing versions
-
-DACC uses [semantic versioning](https://semver.org/), that is versions are in the form `<major>.<minor>.<patch>`.
-
-- `<major>` is updated when there is breaking API changes
-- `<minor>` is updated on feature addition
-- `<patch>` is updated on backward-compatible bug fixes
-
-#### Releasing a new version
-
-The script `scripts/releaseversion.sh` will release a new production version:
-- Remove the `-dev` suffix to current version
-- Commit & tag production version
-- Bump to next development release (bumping `<patch>`, ready for next bugfix)
-- Commit next development release
-- Push commits & tags
-
-```
-$ ./scripts/releaseversion.sh
-```
-
-#### Updating version number
-
-Each time you introduce new features, you need to manually increase `<minor>` in version number (and reset patch to 0) and each time you introduce backward-incompatible API change, you need to bump `<major>` and reset minor and patch to 0.
-
-To manually change version, use the script `scripts/nextversion.sh`
-
-```
-$ ./scripts/nextversion.sh 1.2.3
-```
-
-This script will update version number, adding `-dev` suffix but it is your responsibility to add, commit & push the change.
 
 ## Database migration
 
