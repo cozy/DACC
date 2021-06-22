@@ -94,7 +94,7 @@ def show_table(table_name):
 
 @dacc.cli.command("insert-definitions")
 @click.option(
-    "-f", "file_path", default="data/definitions.sql", show_default=True
+    "-f", "file_path", default="assets/definitions.sql", show_default=True
 )
 def insert_measure_definition(file_path):
     """DEPRECATED - Insert measure definitions from file"""
@@ -120,7 +120,7 @@ def insert_measure_definition(file_path):
 
 @dacc.cli.command("insert-definitions-json")
 @click.option(
-    "-f", "file_path", default="data/definitions.json", show_default=True
+    "-f", "file_path", default="assets/definitions.json", show_default=True
 )
 def insert_measure_definition_json(file_path):
     """Insert measure definitions from file"""
