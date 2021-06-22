@@ -3,6 +3,14 @@ from dacc import db
 
 
 def insert_raw_measure(measure):
+    """Insert JSON raw measure in database
+
+    Args:
+        measure (JSON): The JSON-formatted raw measure
+
+    Returns:
+        RawMeasure: The inserted raw measure in database
+    """
     try:
         group1 = (
             measure["groups"][0]
@@ -38,6 +46,14 @@ def insert_raw_measure(measure):
 
 
 def insert_measure_definition(definition):
+    """Insert JSON measure definition in database
+
+    Args:
+        definition (JSON): The JSON-formatted definition
+
+    Returns:
+        MeasureDefinition: The inserted definition in database
+    """
     try:
         d = MeasureDefinition(
             id=definition.get("id"),
