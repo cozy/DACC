@@ -206,11 +206,10 @@ def send_random_measures(
 
     for i, measure in enumerate(measures):
         url = urljoin(dacc_address, "/measure")
-        r = requests.post(url, json=measure)
         if token:
             headers = {}
-            headers["Authorization"] = "Bearer {token}"
-            r.headers = headers
+            headers["Authorization"] = "Bearer " + token
+        r = requests.post(url, json=measure, headers=headers)
         if r.status_code == 201:
             print("measure {} sent: {}".format((i + 1), measure))
         if r.status_code != 201:
