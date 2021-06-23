@@ -33,7 +33,7 @@ flask run
 # API 
 ## Add a measure
 
-You can query the `/measure` endpoint to add a raw measure:
+You can request the `/measure` endpoint to add a raw measure:
 
 ```
 $ curl -X POST -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/measure -d @measure.json
@@ -49,7 +49,13 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-The `token` is the one specified in the remote-doctype to authenticate the stack. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to automatically get the correct token from the stack.
+ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`.
+
+
+ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server.
+To know how to use a remote-doctype from a Cozy app, see the [stack documentation](https://docs.cozy.io/en/cozy-stack/remote/).
+
+### Measure format 
 
 Here is an example of a valid measure:
 ```
@@ -72,6 +78,7 @@ The expected fields are the following:
 * `startDate`: {date} the starting date of the measure. It must be set in relation with the `aggregationPeriod` for this measure. 
 * `createdBy`: {string} the application that produced the measure.
 * `groups`: {Array} a list of groups, used to group measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. For example, `{"device": "desktop"}`. Note the `groups` length cannot exceed 3 and the order matters: the first key entry must match the `group1_key` of the measure definition, and so on. 
+
 
 
 ## Measure definition
