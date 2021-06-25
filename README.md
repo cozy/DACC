@@ -235,5 +235,6 @@ It is then possible to run `flask db update` on the DACC server to automatically
 To insert measure definitions, simply run `flask insert-definitions-json`.
 By default, it takes the JSON file stored in `dacc/assets/definitions.json`, containing all definitions.
 
+For each definition found, it either inserts it, if it does not exist, or updates it otherwise.
 
 
