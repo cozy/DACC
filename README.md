@@ -49,10 +49,10 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`.
+ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests. 
 
 
-ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server.
+ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
 To know how to use a remote-doctype from a Cozy app, see the [stack documentation](https://docs.cozy.io/en/cozy-stack/remote/).
 
 ### Measure format 
