@@ -7,7 +7,7 @@ pipeline {
   options {
     disableConcurrentBuilds()
     gitLabConnection('https://gitlab.cozycloud.cc')
-    gitlabBuilds(builds: ["Deploy-prod"])
+    gitlabBuilds(builds: ["Deploy-prod", "Deploy-doc"])
     // timestamps()
   }
 
@@ -23,6 +23,19 @@ pipeline {
             sh '''
               ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod hostname -f
               ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod sudo /usr/local/sbin/update-dacc.sh
+            '''
+          }
+        }
+      }
+    }
+    stage ('Deploy-doc') {
+      steps {
+        gitlabCommitStatus("Deploy-doc") {
+          echo 'Deploying documentation....'
+          dir('sandbox/') {
+            sh '''
+              ssh -o StrictHostkeyChecking=no root@webmut-01-prod.cozycloud.cc hostname -f
+              scp -o StrictHostkeyChecking=no README.md root@webmut-01-prod.cozycloud.cc:/var/www/files/dacc/README.md
             '''
           }
         }
