@@ -19,12 +19,10 @@ pipeline {
           echo 'Deploying....'
           mattermostSend(color: "warning", channel: "feat---dacc", message: "Deploying DACC on **production**")
           mattermostSend(color: "warning", channel: "publication", message: "Deploying DACC on **production**")
-          dir('sandbox/') {
-            sh '''
-              ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod hostname -f
-              ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod sudo /usr/local/sbin/update-dacc.sh
-            '''
-          }
+          sh '''
+            ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod hostname -f
+            ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod sudo /usr/local/sbin/update-dacc.sh
+          '''
         }
       }
     }
@@ -32,12 +30,10 @@ pipeline {
       steps {
         gitlabCommitStatus("Deploy-doc") {
           echo 'Deploying documentation....'
-          dir('sandbox/') {
-            sh '''
-              ssh -o StrictHostkeyChecking=no root@webmut-01-prod.cozycloud.cc hostname -f
-              scp -o StrictHostkeyChecking=no README.md root@webmut-01-prod.cozycloud.cc:/var/www/files/dacc/README.md
-            '''
-          }
+          sh '''
+            ssh -o StrictHostkeyChecking=no root@webmut-01-prod.cozycloud.cc hostname -f
+            scp -o StrictHostkeyChecking=no README.md root@webmut-01-prod.cozycloud.cc:/var/www/files/dacc/README.md
+          '''
         }
       }
     }
