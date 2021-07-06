@@ -91,16 +91,71 @@ The expected fields are the following:
 A measure is defined by the following fields: 
 * `name`: {string} the name of the measure. It must indicate what is measured and should include the aggregation period, if relevant, e.g. "connexion-daily", "konnector-error-monthly", etc.
 * `org`: {string} the organization defining this measure.
-* `group1_key`: {string}: the first grouping key. 
-* `group2_key`: {string}: the second grouping key. 
-* `group3_key`: {string}: the third grouping key.
-* `description`: {string}: a human-readable description of the measure.
-* `aggregation_period`: {string}: the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
-* `execution_frequency`: {string}: the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
-* `access_app`: {boolean}: whether or not the result shouold be accessible from the producing app.
-* `access_public`: {boolean}: whether or not the result should be accessible by any requesting organization.
+* `group1_key`: {string} the first grouping key. 
+* `group2_key`: {string} the second grouping key. 
+* `group3_key`: {string} the third grouping key.
+* `description`: {string} a human-readable description of the measure.
+* `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
+* `execution_frequency`: {string} the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
+* `access_app`: {boolean} whether or not the result shouold be accessible from the producing app.
+* `access_public`: {boolean} whether or not the result should be accessible by any requesting organization.
 
 Note there is no public API to insert a new definition. For security purposes, Cozy restricts this possibility and carefully evaluates each new measure definition to accept it or not.
+
+## Query an aggregated result
+
+You can query the `/aggregate` endpoint to get an aggregated result:
+
+```
+$ curl -X GET -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/aggregate -d '{"measureName": "connection-count-daily", "startDate": "2021-05-01", "endDate": "2021-05-02"}'
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 12
+Server: Werkzeug/2.0.1 Python/3.8.10
+Date: Sun, 30 May 2021 14:22:21 GMT
+
+[
+  {
+    "avg": 54.39, 
+    "count": 173, 
+    "countNotZero": 172, 
+    "createdBy": "ecolyo", 
+    "group1": {
+      "device": "desktop"
+    }, 
+    "max": 100.0, 
+    "measureName": "connection-count-daily", 
+    "min": 0.0, 
+    "startDate": "2021-05-01T00:00:00", 
+    "std": 28.94, 
+    "sum": 9410.0
+  },
+  {
+    "avg": 53.04, 
+    "count": 26, 
+    "countNotZero": 26, 
+    "createdBy": "ecolyo", 
+    "group1": {
+      "device": "mobile"
+    }, 
+    "max": 94.0, 
+    "measureName": "connection-count-daily", 
+    "min": 3.0, 
+    "startDate": "2021-05-01T00:00:00", 
+    "std": 29.33, 
+    "sum": 1379.0
+  }
+]
+ 
+```
+
+The expected query parameters are the following:
+* `measureName`: {string} the name of the measure. It must match an existing measure definition.
+* `startDate`: {date} the start date of the requested time period.
+* `endDate`: {date} the end date of the requested time period. 
+* `createdBy`: {string} [optionnal] the name of the application that produced the measure.
+
+ℹ️ `startDate` is inclusive, while `endDate` is exclusive. In other words, `startDate >= {results} < endDate`
 
 
 # Development
