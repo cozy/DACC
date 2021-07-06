@@ -1,5 +1,6 @@
 import sentry_sdk
 from config import Config
+from dacc.encoder import CustomJSONEncoder
 from dacc.version import __version__
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -7,10 +8,12 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_migrate import Migrate
 from flask_caching import Cache
 
+
 configdata = Config()
 dacc = Flask(__name__)
 dacc.config.from_object(configdata)
 dacc.version = __version__
+dacc.json_encoder = CustomJSONEncoder
 
 sentry_config = configdata.get("sentry", {})
 sentry_sdk.init(

@@ -13,6 +13,9 @@ def generate_groups(measure_definition):
     group1 = None
     group2 = None
     group3 = None
+
+    fake_group_values = ["fake1", "fake2", "fake3"]
+
     if measure_definition.name == "connection-count-daily":
         group1_val = random.choice(["mobile", "desktop"])
         group1 = {"device": group1_val}
@@ -29,11 +32,31 @@ def generate_groups(measure_definition):
         group1_val = random.choice(["electricity", "water", "gas"])
         group1 = {"energy_type": group1_val}
 
+    else:
+        if measure_definition.group1_key is not None:
+            group1 = {
+                measure_definition.group1_key: random.choice(fake_group_values)
+            }
+        if measure_definition.group2_key is not None:
+            group2 = {
+                measure_definition.group2_key: random.choice(fake_group_values)
+            }
+        if measure_definition.group1_key is not None:
+            group3 = {
+                measure_definition.group3_key: random.choice(fake_group_values)
+            }
     return (group1, group2, group3)
 
 
 def generate_random_raw_measures(
-    n_measures, n_days, starting_day, measure_name
+    n_measures,
+    n_days,
+    starting_day,
+    measure_name,
+    created_by,
+    group1,
+    group2,
+    group3,
 ):
     try:
         measures = []
@@ -52,22 +75,32 @@ def generate_random_raw_measures(
                 _measure_name = measure_name
                 m_def = models.MeasureDefinition.query_by_name(measure_name)
                 if m_def is None:
-                    print("Measure not found: {}".format(measure_name))
                     return
-            group1, group2, group3 = generate_groups(m_def)
+
             measure = {
                 "measureName": _measure_name,
                 "value": random.randint(0, 100),
                 "startDate": random.choice(days).isoformat(),
-                "createdBy": random.choice(APPS),
-                "groups": [],
+                "createdBy": created_by or random.choice(APPS),
             }
+
             if group1:
-                measure["groups"].append(group1)
+                measure["group1"] = group1
             if group2:
-                measure["groups"].append(group2)
+                measure["group2"] = group2
             if group3:
-                measure["groups"].append(group3)
+                measure["group3"] = group3
+            _group1 = None
+            _group2 = None
+            _group3 = None
+            if group1 is None and group2 is None and group3 is None:
+                _group1, _group2, _group3 = generate_groups(m_def)
+            if _group1:
+                measure["group1"] = _group1
+            if _group2:
+                measure["group2"] = _group2
+            if _group3:
+                measure["group3"] = _group3
 
             measures.append(measure)
         return measures
@@ -75,9 +108,25 @@ def generate_random_raw_measures(
         print("Exception during fixture insertion: " + repr(e))
 
 
-def insert_random_raw_measures(n_measures, n_days, starting_day, measure_name):
+def insert_random_raw_measures(
+    n_measures,
+    n_days,
+    starting_day,
+    measure_name=None,
+    created_by=None,
+    group1=None,
+    group2=None,
+    group3=None,
+):
     measures = generate_random_raw_measures(
-        n_measures, n_days, starting_day, measure_name
+        n_measures,
+        n_days,
+        starting_day,
+        measure_name,
+        created_by,
+        group1,
+        group2,
+        group3,
     )
     if not measures:
         return
