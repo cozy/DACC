@@ -23,7 +23,7 @@ sentry_sdk.init(
     release="dacc@{}".format(__version__),
 )
 
-cache = Cache(dacc, config={"CACHE_TYPE": "simple"})
+cache = Cache(dacc, config={"CACHE_TYPE": "SimpleCache"})
 
 db = SQLAlchemy(dacc)
 migrate = Migrate(dacc, db)
