@@ -52,40 +52,37 @@ def check_incoming_raw_measure(measure):
     except ValueError:
         raise Exception("startDate type is incorrect, it must be a date")
 
-    if "groups" in measure and len(measure["groups"]) > 0:
-        group1_key = None
-        group2_key = None
-        group3_key = None
-        try:
-            group1 = measure["groups"][0]
-            group1_key = list(group1.keys())[0]
-            if len(measure["groups"]) > 1:
-                group2 = measure["groups"][1]
-                group2_key = list(group2.keys())[0]
-            if len(measure["groups"]) > 2:
-                group3 = measure["groups"][2]
-                group3_key = list(group3.keys())[0]
-        except Exception:
-            raise Exception("groups format is incorrect")
+    group1_key = None
+    group2_key = None
+    group3_key = None
+    try:
+        if "group1" in measure:
+            group1_key = list(measure["group1"].keys())[0]
+        if "group2" in measure:
+            group2_key = list(measure["group2"].keys())[0]
+        if "group3" in measure:
+            group3_key = list(measure["group3"].keys())[0]
+    except Exception:
+        raise Exception("groups format is incorrect")
 
-        if m_def.group1_key != group1_key:
-            raise Exception(
-                "Group key does not match measure definition: {}".format(
-                    group1_key
-                )
+    if m_def.group1_key != group1_key:
+        raise Exception(
+            "Group1 key does not match measure definition: {}".format(
+                group1_key
             )
-        if m_def.group2_key != group2_key:
-            raise Exception(
-                "Group key does not match measure definition: {}".format(
-                    group2_key
-                )
+        )
+    if m_def.group2_key != group2_key:
+        raise Exception(
+            "Group2 key does not match measure definition: {}".format(
+                group2_key
             )
-        if m_def.group3_key != group3_key:
-            raise Exception(
-                "Group key does not match measure definition: {}".format(
-                    group3_key
-                )
+        )
+    if m_def.group3_key != group3_key:
+        raise Exception(
+            "Group3 key does not match measure definition: {}".format(
+                group3_key
             )
+        )
     return True
 
 

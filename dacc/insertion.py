@@ -12,31 +12,15 @@ def insert_raw_measure(measure):
         RawMeasure: The inserted raw measure in database
     """
     try:
-        group1 = (
-            measure["groups"][0]
-            if ("groups" in measure and len(measure["groups"]) > 0)
-            else None
-        )
-        group2 = (
-            measure["groups"][1]
-            if "groups" in measure and len(measure["groups"]) > 1
-            else None
-        )
-        group3 = (
-            measure["groups"][2]
-            if "groups" in measure and len(measure["groups"]) > 2
-            else None
-        )
-
         m = RawMeasure(
             measure_name=measure.get("measureName"),
             value=measure.get("value"),
             start_date=measure.get("startDate"),
             aggregation_period=measure.get("aggregationPeriod"),
             created_by=measure.get("createdBy"),
-            group1=group1,
-            group2=group2,
-            group3=group3,
+            group1=measure.get("group1"),
+            group2=measure.get("group2"),
+            group3=measure.get("group3"),
         )
         db.session.add(m)
         db.session.commit()
