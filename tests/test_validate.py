@@ -38,7 +38,7 @@ def test_check_incoming_raw_measure():
         "measureName": "connection-count-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": ["dummy"],
+        "group1": ["dummy"],
     }
     assert_exception(m, "groups format is incorrect")
 
@@ -46,7 +46,8 @@ def test_check_incoming_raw_measure():
         "measureName": "connection-count-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": [{"dummy": "dummy"}, {"dummy"}],
+        "group1": {"dummy": "dummy"},
+        "group2": {"dummy"},
     }
     assert_exception(m, "groups format is incorrect")
 
@@ -54,23 +55,24 @@ def test_check_incoming_raw_measure():
         "measureName": "connection-count-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": [{"dummy": "dummy"}],
+        "group1": {"dummy": "dummy"},
     }
-    assert_exception(m, "Group key does not match measure definition")
+    assert_exception(m, "Group1 key does not match measure definition")
 
     m = {
         "measureName": "connection-count-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": [{"device": "dummy"}, {"dummy": "dummy"}],
+        "group1": {"device": "dummy"},
+        "group2": {"dummy": "dummy"},
     }
-    assert_exception(m, "Group key does not match measure definition")
+    assert_exception(m, "Group2 key does not match measure definition")
 
     m = {
         "measureName": "connection-count-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": [{"device": "desktop"}],
+        "group1": {"device": "desktop"},
     }
     assert validate.check_incoming_raw_measure(m) is True
 
@@ -78,10 +80,8 @@ def test_check_incoming_raw_measure():
         "measureName": "konnector-event-daily",
         "value": 42,
         "startDate": "2021-05-01",
-        "groups": [
-            {"slug": "enedis"},
-            {"event_type": "connexion"},
-            {"status": "success"},
-        ],
+        "group1": {"slug": "enedis"},
+        "group2": {"event_type": "connexion"},
+        "group3": {"status": "success"},
     }
     assert validate.check_incoming_raw_measure(m) is True

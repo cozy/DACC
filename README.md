@@ -60,15 +60,19 @@ To know how to use a remote-doctype from a Cozy app, see the [stack documentatio
 Here is an example of a valid measure:
 ```
 {
-  "measureName": "connection-count-daily",
-  "value": 6,
+  "measureName": "konnector-event-daily",
+  "value": 1,
   "startDate": "2021-05-04",
   "createdBy": "ecolyo",
-  "groups": [
-    {
-      "device": "desktop"
-    }
-  ]
+  "group1": {
+      "slug": "enedis"
+  },
+  "group2": {
+      "event_type": "connection"
+  },
+  "group3": {
+      "status": "success"
+  }
 }
 ```
 
@@ -77,8 +81,9 @@ The expected fields are the following:
 * `value`: {number} the measured value. It can be 0 but never `null`.
 * `startDate`: {date} the starting date of the measure. It must be set in relation with the `aggregationPeriod` for this measure. 
 * `createdBy`: {string} the application that produced the measure.
-* `groups`: {Array} a list of groups, used to group measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. For example, `{"device": "desktop"}`. Note the `groups` length cannot exceed 3 and the order matters: the first key entry must match the `group1_key` of the measure definition, and so on. 
-
+* `group1`: {object} The first group. Groups are used to combinate measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. Here, the key must match the `group1_key` of the associated measure definition.
+* `group2`: {object} The second group. Its key must match the `group2_key` of the associated measure definition.
+* `group3`: {object} The third group. Its key must match the `group3_key` of the associated measure definition.
 
 
 ## Measure definition
