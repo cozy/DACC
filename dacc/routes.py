@@ -1,4 +1,4 @@
-from dacc import dacc, db, validate, insertion
+from dacc import dacc, db, validate, insertion, restitution
 from dacc.models import Auth
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
@@ -41,6 +41,23 @@ def add_raw_measure():
         if validate.check_incoming_raw_measure(measure):
             insertion.insert_raw_measure(measure)
             return jsonify({"ok": True}), 201
+    except Exception as err:
+        return handle_error(err, 400)
+
+
+@dacc.route("/aggregate", methods=["GET"])
+@auth.login_required
+def get_aggregated_results():
+    """Get aggregated results
+
+    Returns:
+        HTTP response: [results]
+    """
+    try:
+        params = request.get_json()
+        if validate.check_restitution_params(params):
+            res = restitution.get_aggregated_results(params)
+            return jsonify(res), 200
     except Exception as err:
         return handle_error(err, 400)
 
