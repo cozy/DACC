@@ -75,6 +75,7 @@ def generate_random_raw_measures(
                 _measure_name = measure_name
                 m_def = models.MeasureDefinition.query_by_name(measure_name)
                 if m_def is None:
+                    print("Measure not found: {}".format(measure_name))
                     return
 
             measure = {

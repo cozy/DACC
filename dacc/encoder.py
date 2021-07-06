@@ -12,7 +12,6 @@ class CustomJSONEncoder(JSONEncoder):
     """Custom JSON encoder to deal with non-serialized JSON types"""
 
     def default(self, o):
-        print("o : {}".format(o))
         if isinstance(o, datetime.datetime):
             return o.isoformat()
         elif isinstance(o, decimal.Decimal):
