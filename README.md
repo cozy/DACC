@@ -157,6 +157,7 @@ The expected query parameters are the following:
 * `createdBy`: {string} [optionnal] the name of the application that produced the measure.
 
 ℹ️ `startDate` is inclusive, while `endDate` is exclusive. In other words, `startDate >= {results} < endDate`
+
 ⚠️ If an aggregate has less contributions than the `aggregation_threshold` set in the associated measure definition, no result will be returned. This is a safeguard to ensure that no individual contribution can be revealed.
 
 # Development
