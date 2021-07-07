@@ -97,6 +97,7 @@ A measure is defined by the following fields:
 * `description`: {string} a human-readable description of the measure.
 * `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
 * `execution_frequency`: {string} the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
+* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results) 
 * `access_app`: {boolean} whether or not the result shouold be accessible from the producing app.
 * `access_public`: {boolean} whether or not the result should be accessible by any requesting organization.
 
@@ -156,7 +157,7 @@ The expected query parameters are the following:
 * `createdBy`: {string} [optionnal] the name of the application that produced the measure.
 
 ℹ️ `startDate` is inclusive, while `endDate` is exclusive. In other words, `startDate >= {results} < endDate`
-
+⚠️ If an aggregate has less contributions than the `aggregation_threshold` set in the associated measure definition, no result will be returned. This is a safeguard to ensure that no individual contribution can be revealed.
 
 # Development
 
