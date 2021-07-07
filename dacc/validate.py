@@ -4,6 +4,18 @@ from dateutil.parser import parse
 from datetime import datetime
 
 
+def check_date(params, date_key):
+    if date_key not in params:
+        raise Exception("{} must be given".format(date_key))
+    try:
+        parse(params[date_key])
+        return True
+    except ValueError:
+        raise Exception(
+            "{} type is incorrect, it must be a date".format(date_key)
+        )
+
+
 def check_incoming_raw_measure(measure):
     """Check the incoming raw measure is valid.
 
@@ -45,12 +57,7 @@ def check_incoming_raw_measure(measure):
     except ValueError:
         raise Exception("value type is incorrect, it must be a number")
 
-    if "startDate" not in measure:
-        raise Exception("A start date must be given")
-    try:
-        parse(measure["startDate"])
-    except ValueError:
-        raise Exception("startDate type is incorrect, it must be a date")
+    check_date(measure, "startDate")
 
     group1_key = None
     group2_key = None
@@ -104,3 +111,39 @@ def is_execution_frequency_respected(
     return utils.is_dates_interval_higher(
         start_date, end_date, m_definition.execution_frequency
     )
+
+
+def check_restitution_params(params):
+    """Check the aggregate restitution query is valid.
+
+    Args:
+        params (dict): The raw measure
+
+    Raises:
+        Exception: The params are empty
+        Exception: The measure name is not given
+        Exception: The measure name does not exist
+        Exception: The startDate is not given
+        Exception: The startDate is not correct
+        Exception: The endDate is not given
+        Exception: The endDate is not correct
+
+    Returns:
+        bool: True if the measure is valid
+    """
+    if params is None:
+        raise Exception("The params cannot be empty")
+
+    if "measureName" not in params:
+        raise Exception("A measure name must be given")
+
+    m_def = MeasureDefinition.query_by_name(params["measureName"])
+    if m_def is None:
+        raise Exception(
+            "No measure definition found for: {}".format(params["measureName"])
+        )
+
+    check_date(params, "startDate")
+    check_date(params, "endDate")
+
+    return True

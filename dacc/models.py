@@ -102,6 +102,14 @@ class MeasureDefinition(db.Model):
     def query_all_names():
         return db.session.query(MeasureDefinition.name).all()
 
+    @staticmethod
+    def query_threshold(name):
+        return (
+            db.session.query(MeasureDefinition.aggregation_threshold)
+            .filter(MeasureDefinition.name == name)
+            .scalar_subquery()
+        )
+
 
 class AggregationDate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -153,6 +161,27 @@ class Aggregation(db.Model):
                 Aggregation.group3 == m.group3,
             )
             .first()
+        )
+
+    @staticmethod
+    def query_range_with_threshold(
+        measure_name, start_date, end_date, created_by=None
+    ):
+        filters = [
+            Aggregation.measure_name == measure_name,
+            Aggregation.start_date >= start_date,
+            Aggregation.start_date < end_date,
+        ]
+        if created_by is not None:
+            filters.append(Aggregation.created_by == created_by)
+
+        subquery_threshold = MeasureDefinition.query_threshold(measure_name)
+        filters.append(Aggregation.count >= subquery_threshold)
+        return (
+            db.session.query(Aggregation)
+            .filter(*filters)
+            .order_by(Aggregation.start_date)
+            .all()
         )
 
 
