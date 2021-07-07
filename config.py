@@ -1,4 +1,5 @@
 import yaml
+import os
 from os import path as osp
 
 
@@ -80,7 +81,10 @@ class Config(object):
         self._config = self._read_config(config_fullpath)
 
         # Validate config
-        db_config = self.get("database")
+        if os.environ.get("TESTING"):
+            db_config = self.get("database").get("testing")
+        else:
+            db_config = self.get("database").get("default")
         if not isinstance(db_config, dict):
             raise ValueError("database config should be a dict")
         for key in ["host", "port", "dbname", "user", "password"]:
