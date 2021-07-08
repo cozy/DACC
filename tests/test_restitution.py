@@ -31,7 +31,7 @@ def test_restitute_aggregated_results():
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     p = {
-        "measureName": "dummy",
+        "measureName": "dummy-restitute",
         "startDate": "2021-05-01",
         "endDate": "2021-06-01",
     }
