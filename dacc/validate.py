@@ -1,5 +1,6 @@
 from dacc.models import MeasureDefinition
-from dacc import utils
+from dacc import utils, exceptions
+from dacc.exceptions import AccessException
 from dateutil.parser import parse
 from datetime import datetime
 
@@ -113,6 +114,10 @@ def is_execution_frequency_respected(
     )
 
 
+def is_access_app_authorized(m_def):
+    return m_def.access_app is True
+
+
 def check_restitution_params(params):
     """Check the aggregate restitution query is valid.
 
@@ -127,6 +132,7 @@ def check_restitution_params(params):
         Exception: The startDate is not correct
         Exception: The endDate is not given
         Exception: The endDate is not correct
+        AccessException: The access is not authorized for this measure
 
     Returns:
         bool: True if the measure is valid
@@ -141,6 +147,11 @@ def check_restitution_params(params):
     if m_def is None:
         raise Exception(
             "No measure definition found for: {}".format(params["measureName"])
+        )
+
+    if not is_access_app_authorized(m_def):
+        raise AccessException(
+            "You cannot access results for this measure: {}".format(m_def.name)
         )
 
     check_date(params, "startDate")

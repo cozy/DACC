@@ -9,7 +9,7 @@ def insert_dummy(n_measures, n_days, date, created_by="ecolyo"):
         n_measures,
         n_days,
         date,
-        "dummy",
+        "dummy-restitute",
         created_by,
         group1={"key1": 1},
         group2={"key2": 2},
@@ -19,7 +19,7 @@ def insert_dummy(n_measures, n_days, date, created_by="ecolyo"):
 
 def test_restitute_aggregated_results():
     m_def = MeasureDefinition(
-        name="dummy",
+        name="dummy-restitute",
         aggregation_threshold=5,
         group1_key="key1",
         group2_key="key2",
@@ -40,7 +40,7 @@ def test_restitute_aggregated_results():
     assert len(res) == 1
     assert res[0]["startDate"] == parse("2021-05-01")
     assert res[0]["count"] == 10
-    assert res[0]["measureName"] == "dummy"
+    assert res[0]["measureName"] == "dummy-restitute"
     assert res[0]["createdBy"] == "ecolyo"
     assert "sum" in res[0]
     assert "countNotZero" in res[0]
@@ -89,7 +89,7 @@ def test_restitute_aggregated_results():
     insert_dummy(10, 1, "2021-05-01", created_by="ecolyoyo")
     aggregation.aggregate_raw_measures(m_def, force=True)
     p = {
-        "measureName": "dummy",
+        "measureName": "dummy-restitute",
         "startDate": "2021-05-01",
         "endDate": "2021-06-01",
         "createdBy": "ecolyoyo",
