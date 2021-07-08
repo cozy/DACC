@@ -1,11 +1,11 @@
 import pytest
 from dacc import validate, db
 from dacc.models import MeasureDefinition
-from dacc.exceptions import AccessException
+from dacc.exceptions import AccessException, ValidationException
 
 
 def assert_raw_measure_exception(m, exception_value):
-    with pytest.raises(Exception) as e_info:
+    with pytest.raises(ValidationException) as e_info:
         validate.check_incoming_raw_measure(m)
     assert exception_value in str(e_info.value)
 
@@ -100,7 +100,7 @@ def test_check_incoming_raw_measure():
 
 
 def assert_restitution_exception(m, exception_value):
-    with pytest.raises(Exception) as e_info:
+    with pytest.raises(ValidationException) as e_info:
         validate.check_restitution_params(m)
     assert exception_value in str(e_info.value)
 

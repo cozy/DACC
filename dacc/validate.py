@@ -1,18 +1,18 @@
 from dacc.models import MeasureDefinition
-from dacc import utils, exceptions
-from dacc.exceptions import AccessException
+from dacc import utils
+from dacc.exceptions import AccessException, ValidationException
 from dateutil.parser import parse
 from datetime import datetime
 
 
 def check_date(params, date_key):
     if date_key not in params:
-        raise Exception("{} must be given".format(date_key))
+        raise ValidationException("{} must be given".format(date_key))
     try:
         parse(params[date_key])
         return True
     except ValueError:
-        raise Exception(
+        raise ValidationException(
             "{} type is incorrect, it must be a date".format(date_key)
         )
 
@@ -24,39 +24,41 @@ def check_incoming_raw_measure(measure):
         measure (dict): The raw measure
 
     Raises:
-        Exception: The measure name is not given
-        Exception: The measure name does not exist
-        Exception: The value is not given
-        Exception: The value type is not correct
-        Exception: The startDate is not given
-        Exception: The startDate is not correct
-        Exception: The groups format is not correct
-        Exception: The groups key does not match measure definition
+        ValidationException: The measure name is not given
+        ValidationException: The measure name does not exist
+        ValidationException: The value is not given
+        ValidationException: The value type is not correct
+        ValidationException: The startDate is not given
+        ValidationException: The startDate is not correct
+        ValidationException: The groups format is not correct
+        ValidationException: The groups key does not match measure definition
 
     Returns:
         bool: True if the measure is valid
     """
 
     if measure is None:
-        raise Exception("The measure cannot be empty")
+        raise ValidationException("The measure cannot be empty")
 
     if "measureName" not in measure:
-        raise Exception("A measure name must be given")
+        raise ValidationException("A measure name must be given")
 
     m_def = MeasureDefinition.query_by_name(measure["measureName"])
     if m_def is None:
-        raise Exception(
+        raise ValidationException(
             "No measure definition found for: {}".format(
                 measure["measureName"]
             )
         )
 
     if "value" not in measure:
-        raise Exception("A value must be given")
+        raise ValidationException("A value must be given")
     try:
         float(measure["value"])
     except ValueError:
-        raise Exception("value type is incorrect, it must be a number")
+        raise ValidationException(
+            "value type is incorrect, it must be a number"
+        )
 
     check_date(measure, "startDate")
 
@@ -71,22 +73,22 @@ def check_incoming_raw_measure(measure):
         if "group3" in measure:
             group3_key = list(measure["group3"].keys())[0]
     except Exception:
-        raise Exception("groups format is incorrect")
+        raise ValidationException("groups format is incorrect")
 
     if m_def.group1_key != group1_key:
-        raise Exception(
+        raise ValidationException(
             "Group1 key does not match measure definition: {}".format(
                 group1_key
             )
         )
     if m_def.group2_key != group2_key:
-        raise Exception(
+        raise ValidationException(
             "Group2 key does not match measure definition: {}".format(
                 group2_key
             )
         )
     if m_def.group3_key != group3_key:
-        raise Exception(
+        raise ValidationException(
             "Group3 key does not match measure definition: {}".format(
                 group3_key
             )
@@ -125,27 +127,27 @@ def check_restitution_params(params):
         params (dict): The raw measure
 
     Raises:
-        Exception: The params are empty
-        Exception: The measure name is not given
-        Exception: The measure name does not exist
-        Exception: The startDate is not given
-        Exception: The startDate is not correct
-        Exception: The endDate is not given
-        Exception: The endDate is not correct
+        ValidationException: The params are empty
+        ValidationException: The measure name is not given
+        ValidationException: The measure name does not exist
+        ValidationException: The startDate is not given
+        ValidationException: The startDate is not correct
+        ValidationException: The endDate is not given
+        ValidationException: The endDate is not correct
         AccessException: The access is not authorized for this measure
 
     Returns:
         bool: True if the measure is valid
     """
     if params is None:
-        raise Exception("The params cannot be empty")
+        raise ValidationException("The params cannot be empty")
 
     if "measureName" not in params:
-        raise Exception("A measure name must be given")
+        raise ValidationException("A measure name must be given")
 
     m_def = MeasureDefinition.query_by_name(params["measureName"])
     if m_def is None:
-        raise Exception(
+        raise ValidationException(
             "No measure definition found for: {}".format(params["measureName"])
         )
 

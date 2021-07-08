@@ -1,4 +1,6 @@
 class AccessException(Exception):
     """Raise for access exception"""
 
-    pass
+
+class ValidationException(Exception):
+    """Raise for input validation exception"""
