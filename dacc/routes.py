@@ -4,7 +4,7 @@ from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_httpauth import HTTPTokenAuth
 from dacc import cache
-from dacc.exceptions import AccessException
+from dacc.exceptions import AccessException, ValidationException
 
 auth = HTTPTokenAuth(scheme="Bearer")
 
@@ -42,8 +42,10 @@ def add_raw_measure():
         if validate.check_incoming_raw_measure(measure):
             insertion.insert_raw_measure(measure)
             return jsonify({"ok": True}), 201
-    except Exception as err:
+    except ValidationException as err:
         return handle_error(err, 400)
+    except Exception as err:
+        return handle_error(err, 500)
 
 
 @dacc.route("/aggregate", methods=["GET"])
@@ -61,8 +63,10 @@ def get_aggregated_results():
             return jsonify(res), 200
     except AccessException as err:
         return handle_error(err, 403)
-    except Exception as err:
+    except ValidationException as err:
         return handle_error(err, 400)
+    except Exception as err:
+        return handle_error(err, 500)
 
 
 @dacc.route("/status")
