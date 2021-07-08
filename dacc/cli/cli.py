@@ -92,32 +92,6 @@ def show_table(table_name):
         raise click.Abort()
 
 
-@dacc.cli.command("insert-definitions")
-@click.option(
-    "-f", "file_path", default="assets/definitions.sql", show_default=True
-)
-def insert_measure_definition(file_path):
-    """DEPRECATED - Insert measure definitions from file"""
-
-    try:
-        print("DEPRECATED - prefer the insert-definitions-json command")
-        path = os.path.join(consts.ROOT_PATH, file_path)
-        f = open(path, "r")
-        lines = f.readlines()
-        for stmt in lines:
-            print(stmt)
-            try:
-                db.session.execute(stmt)
-            except exc.IntegrityError:
-                db.session.rollback()
-                print("IGNORED - Already exist.")
-                pass
-        db.session.commit()
-    except Exception as err:
-        print("Command failed: {}".format(repr(err)))
-        raise click.Abort()
-
-
 @dacc.cli.command("insert-definitions-json")
 @click.option(
     "-f", "file_path", default="assets/definitions.json", show_default=True
