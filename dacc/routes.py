@@ -4,6 +4,7 @@ from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_httpauth import HTTPTokenAuth
 from dacc import cache
+from dacc.exceptions import AccessException
 
 auth = HTTPTokenAuth(scheme="Bearer")
 
@@ -58,6 +59,8 @@ def get_aggregated_results():
         if validate.check_restitution_params(params):
             res = restitution.get_aggregated_results(params)
             return jsonify(res), 200
+    except AccessException as err:
+        return handle_error(err, 403)
     except Exception as err:
         return handle_error(err, 400)
 

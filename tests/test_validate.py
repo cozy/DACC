@@ -1,5 +1,7 @@
 import pytest
-from dacc import validate
+from dacc import validate, db
+from dacc.models import MeasureDefinition
+from dacc.exceptions import AccessException
 
 
 def assert_raw_measure_exception(m, exception_value):
@@ -104,6 +106,12 @@ def assert_restitution_exception(m, exception_value):
 
 
 def test_check_restitution_params():
+
+    m_def = MeasureDefinition(
+        name="dummy-check-params", aggregation_threshold=5, access_app=True
+    )
+    db.session.add(m_def)
+
     p = None
     assert_restitution_exception(p, "The params cannot be empty")
 
@@ -115,22 +123,22 @@ def test_check_restitution_params():
         p, "No measure definition found for: fake-dummy"
     )
 
-    p = {"measureName": "connection-count-daily"}
+    p = {"measureName": "dummy-check-params"}
     assert_restitution_exception(p, "startDate must be given")
 
     p = {
-        "measureName": "connection-count-daily",
+        "measureName": "dummy-check-params",
         "startDate": "not-a-date",
     }
     assert_restitution_exception(
         p, "startDate type is incorrect, it must be a date"
     )
 
-    p = {"measureName": "connection-count-daily", "startDate": "2021-05-01"}
+    p = {"measureName": "dummy-check-params", "startDate": "2021-05-01"}
     assert_restitution_exception(p, "endDate must be given")
 
     p = {
-        "measureName": "connection-count-daily",
+        "measureName": "dummy-check-params",
         "startDate": "2021-05-01",
         "endDate": "not-a-date",
     }
@@ -139,8 +147,35 @@ def test_check_restitution_params():
     )
 
     p = {
-        "measureName": "connection-count-daily",
+        "measureName": "dummy-check-params",
         "startDate": "2021-05-01",
         "endDate": "2021-06-01",
     }
+    assert validate.check_restitution_params(p) is True
+
+
+def test_check_restitution_access():
+    m_def = MeasureDefinition(
+        name="dummy-no-access-app", aggregation_threshold=5, access_app=False
+    )
+    db.session.add(m_def)
+
+    p = {
+        "measureName": "dummy-no-access-app",
+        "startDate": "2021-05-01",
+        "endDate": "2021-06-01",
+    }
+    with pytest.raises(AccessException):
+        validate.check_restitution_params(p)
+
+    m_def = MeasureDefinition(
+        name="dummy-access-app", aggregation_threshold=5, access_app=True
+    )
+    db.session.add(m_def)
+    p = {
+        "measureName": "dummy-access-app",
+        "startDate": "2021-05-01",
+        "endDate": "2021-06-01",
+    }
+    validate.check_restitution_params(p)
     assert validate.check_restitution_params(p) is True
