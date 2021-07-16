@@ -79,7 +79,7 @@ Here is an example of a valid measure:
 The expected fields are the following:
 * `measureName`: {string} the name of the measure. It must match an existing measure name on the DACC server.
 * `value`: {number} the measured value. It can be 0 but never `null`.
-* `startDate`: {date} the starting date of the measure. It must be set in relation with the `aggregationPeriod` for this measure. 
+* `startDate`: {date} the starting date of the measure. The expected date format is `ISO 8601`. It must be set in relation with the `aggregationPeriod` for this measure: for example, if the `aggregationPeriod` is `day`, then `start_date` must represent the measured day, e.g. `2021-05-01`.
 * `createdBy`: {string} the application that produced the measure.
 * `group1`: {object} The first group. Groups are used to combinate measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. Here, the key must match the `group1_key` of the associated measure definition.
 * `group2`: {object} The second group. Its key must match the `group2_key` of the associated measure definition.
@@ -91,8 +91,8 @@ The expected fields are the following:
 A measure is defined by the following fields: 
 * `name`: {string} the name of the measure. It must indicate what is measured and should include the aggregation period, if relevant, e.g. "connexion-daily", "konnector-error-monthly", etc.
 * `org`: {string} the organization defining this measure.
-* `group1_key`: {string} the first grouping key. 
-* `group2_key`: {string} the second grouping key. 
+* `group1_key`: {string} the first grouping key.
+* `group2_key`: {string} the second grouping key.
 * `group3_key`: {string} the third grouping key.
 * `description`: {string} a human-readable description of the measure.
 * `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
