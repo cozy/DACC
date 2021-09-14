@@ -130,12 +130,37 @@
       "accessPublic": false,
       "aggregationThreshold": 5,
       "createdBy": "ecolyo",
-      "executionFrequency": "day",
+      "executionFrequency": "month",
       "aggregationPeriod": "month",
       "group1Key": "fluid_type",
       "group2Key": "seniority",
       "group3Key": "fluid_usage",
       "description": "Variation de consommation en %"
+    },
+    {
+      "id": 13,
+      "name": "summary-subscription-monthly",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 5,
+      "createdBy": "ecolyo",
+      "executionFrequency": "month",
+      "group1Key": "event_type",
+      "description": "Souscription et usage du bilan mensuel par mail"
+    },
+    {
+      "id": 14,
+      "name": "fluid-data-granularity-monthly",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 5,
+      "createdBy": "ecolyo",
+      "executionFrequency": "month",
+      "group1Key": "fluid_type",
+      "group2Key": "granularity",
+      "description": "Types de données présentes, par granularité"
     }
   ]
 }
