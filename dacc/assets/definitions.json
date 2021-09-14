@@ -130,7 +130,7 @@
       "accessPublic": false,
       "aggregationThreshold": 5,
       "createdBy": "ecolyo",
-      "executionFrequency": "day",
+      "executionFrequency": "month",
       "aggregationPeriod": "month",
       "group1Key": "fluid_type",
       "group2Key": "seniority",
