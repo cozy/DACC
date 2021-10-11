@@ -1,4 +1,4 @@
-from dacc import dacc, db, validate, insertion, restitution
+from dacc import dacc, db, validate, insertion, restitution, logger
 from dacc.models import Auth
 from flask import json, jsonify, request
 from werkzeug.exceptions import HTTPException
@@ -10,6 +10,7 @@ auth = HTTPTokenAuth(scheme="Bearer")
 
 
 def handle_error(err, code):
+    logger.log("error", err)
     return jsonify({"error": str(err)}), code
 
 
@@ -39,6 +40,9 @@ def add_raw_measure():
     """
     try:
         measure = request.get_json()
+        logger.log(
+            "info", "Received measure for: {}".format(measure["measureName"])
+        )
         if validate.check_incoming_raw_measure(measure):
             insertion.insert_raw_measure(measure)
             return jsonify({"ok": True}), 201

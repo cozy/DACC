@@ -300,3 +300,13 @@ By default, it takes the JSON file stored in `dacc/assets/definitions.json`, con
 For each definition found, it either inserts it, if it does not exist, or updates it otherwise.
 
 
+## Logging
+
+Simply enable the functionality in your config file and define minimum message criticity (in syslog's meaning) you want to be sent to syslog:
+
+```
+logging:
+  enable: True
+  logger_criticity: info
+```
+

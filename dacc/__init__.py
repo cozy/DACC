@@ -2,6 +2,7 @@ import sentry_sdk
 from config import Config
 from dacc.encoder import CustomJSONEncoder
 from dacc.version import __version__
+from dacc.logger import Logger
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -30,6 +31,7 @@ cache = Cache(dacc, config={"CACHE_TYPE": "SimpleCache"})
 
 db = SQLAlchemy(dacc)
 migrate = Migrate(dacc, db)
+logger = Logger(configdata.get("logging", {}))
 
 
 from dacc import routes, models  # noqa: E402 F401
