@@ -161,6 +161,41 @@
       "group1Key": "fluid_type",
       "group2Key": "granularity",
       "description": "Types de données présentes, par granularité"
+    },
+    {
+      "id": 15,
+      "name": "konnector-attempts-before-success",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 5,
+      "createdBy": "ecolyo",
+      "executionFrequency": "month",
+      "group1Key": "fluid_type",
+      "description": "Tentatives de connexions nécessaires pour arriver à exécuter un connecteur"
+    },
+    {
+      "id": 16,
+      "name": "connection-count-monthly",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 5,
+      "createdBy": "ecolyo",
+      "executionFrequency": "month",
+      "aggregationPeriod": "month",
+      "description": "Nombre de jours où l'utilisateur s'est connecté au moins une fois à l'application"
+    },
+    {
+      "id": 17,
+      "name": "profile-count",
+      "org": "grandlyon",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 5,
+      "createdBy": "ecolyo",
+      "executionFrequency": "month",
+      "description": "Nombre total de profils complétés"
     }
   ]
 }
