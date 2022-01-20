@@ -30,7 +30,7 @@ source venv/bin/activate
 flask run
 ```
 
-# API 
+# API
 ## Add a measure
 
 You can request the `/measure` endpoint to add a raw measure:
@@ -49,13 +49,13 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests. 
+ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests.
 
 
 ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
 To know how to use a remote-doctype from a Cozy app, see the [stack documentation](https://docs.cozy.io/en/cozy-stack/remote/).
 
-### Measure format 
+### Measure format
 
 Here is an example of a valid measure:
 ```
@@ -88,7 +88,7 @@ The expected fields are the following:
 
 ## Measure definition
 
-A measure is defined by the following fields: 
+A measure is defined by the following fields:
 * `name`: {string} the name of the measure. It must indicate what is measured and should include the aggregation period, if relevant, e.g. "connexion-daily", "konnector-error-monthly", etc.
 * `org`: {string} the organization defining this measure.
 * `group1_key`: {string} the first grouping key.
@@ -97,7 +97,7 @@ A measure is defined by the following fields:
 * `description`: {string} a human-readable description of the measure.
 * `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
 * `execution_frequency`: {string} the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
-* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results) 
+* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results)
 * `access_app`: {boolean} whether or not the result shouold be accessible from the producing app.
 * `access_public`: {boolean} whether or not the result should be accessible by any requesting organization.
 
@@ -117,43 +117,43 @@ Date: Sun, 30 May 2021 14:22:21 GMT
 
 [
   {
-    "avg": 54.39, 
-    "count": 173, 
-    "countNotZero": 172, 
-    "createdBy": "ecolyo", 
+    "avg": 54.39,
+    "count": 173,
+    "countNotZero": 172,
+    "createdBy": "ecolyo",
     "group1": {
       "device": "desktop"
-    }, 
-    "max": 100.0, 
-    "measureName": "connection-count-daily", 
-    "min": 0.0, 
-    "startDate": "2021-05-01T00:00:00", 
-    "std": 28.94, 
+    },
+    "max": 100.0,
+    "measureName": "connection-count-daily",
+    "min": 0.0,
+    "startDate": "2021-05-01T00:00:00",
+    "std": 28.94,
     "sum": 9410.0
   },
   {
-    "avg": 53.04, 
-    "count": 26, 
-    "countNotZero": 26, 
-    "createdBy": "ecolyo", 
+    "avg": 53.04,
+    "count": 26,
+    "countNotZero": 26,
+    "createdBy": "ecolyo",
     "group1": {
       "device": "mobile"
-    }, 
-    "max": 94.0, 
-    "measureName": "connection-count-daily", 
-    "min": 3.0, 
-    "startDate": "2021-05-01T00:00:00", 
-    "std": 29.33, 
+    },
+    "max": 94.0,
+    "measureName": "connection-count-daily",
+    "min": 3.0,
+    "startDate": "2021-05-01T00:00:00",
+    "std": 29.33,
     "sum": 1379.0
   }
 ]
- 
+
 ```
 
 The expected query parameters are the following:
 * `measureName`: {string} the name of the measure. It must match an existing measure definition.
 * `startDate`: {date} the start date of the requested time period.
-* `endDate`: {date} the end date of the requested time period. 
+* `endDate`: {date} the end date of the requested time period.
 * `createdBy`: {string} [optionnal] the name of the application that produced the measure.
 
 ℹ️ `startDate` is inclusive, while `endDate` is exclusive. In other words, `startDate >= {results} < endDate`
@@ -290,7 +290,7 @@ flask token delete-org # Remove an organization
 
 When the database needs a migration, i.e. when the structure changed, for instance a new column, one needs to run `flask db migrate`. A migration script is then generated, that must be commited.
 
-It is then possible to run `flask db update` on the DACC server to automatically handle the database migration. 
+It is then possible to run `flask db update` on the DACC server to automatically handle the database migration.
 
 ## Insert definitions
 
