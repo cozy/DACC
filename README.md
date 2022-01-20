@@ -294,11 +294,22 @@ It is then possible to run `flask db update` on the DACC server to automatically
 
 ## Insert definitions
 
-To insert measure definitions, simply run `flask insert-definitions-json`.
-By default, it takes the JSON file stored in `dacc/assets/definitions.json`, containing all definitions.
+To insert measure definitions, simply copy `assets/definitions-example.json`
+to a new file, adapt it to suit your needs and
+run `flask insert-definitions-json -f assets/yournewfile.json`.
 
-For each definition found, it either inserts it, if it does not exist, or updates it otherwise.
+Without the `-f` flag to specify a specific definition file, it takes the
+JSON file stored in `dacc/assets/definitions.json` by default.
 
+For each definition found, it either inserts it, if it does not exist,
+or updates it otherwise.
+
+### Definition removal
+
+Definitions removed from file are not removed from database by
+`insert-definitions-json`. Currently, definitions should be removed by
+hand from database. A future cli command could be added to remove
+definitions.
 
 ## Logging
 
