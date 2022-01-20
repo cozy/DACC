@@ -43,7 +43,7 @@ pipeline {
             '''
             sh '''
               docker exec dacc_web flask reset-all-tables --yes
-              docker exec dacc_web flask insert-definitions-json
+              docker exec dacc_web flask insert-definitions-json -f assets/definitions-example.json
             '''
           }
         }
