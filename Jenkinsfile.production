@@ -7,7 +7,7 @@ pipeline {
   options {
     disableConcurrentBuilds()
     gitLabConnection('https://gitlab.cozycloud.cc')
-    gitlabBuilds(builds: ["Deploy-prod", "Deploy-doc"])
+    gitlabBuilds(builds: ["Deploy-prod", "Deploy-maif", "Deploy-doc"])
     // timestamps()
   }
 
@@ -22,6 +22,19 @@ pipeline {
           sh '''
             ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod hostname -f
             ssh -o StrictHostkeyChecking=no jenkins@dacc-01-prod sudo /usr/local/sbin/update-dacc.sh
+          '''
+        }
+      }
+    }
+    stage ('Deploy MAIF') {
+      steps {
+        gitlabCommitStatus("Deploy-maif") {
+          echo 'Deploying....'
+          mattermostSend(color: "warning", channel: "feat---dacc", message: "Deploying DACC on **maif**")
+          mattermostSend(color: "warning", channel: "publication", message: "Deploying DACC on **maif**")
+          sh '''
+            ssh -o StrictHostkeyChecking=no jenkins@dacc-01.maif.cozycloud.cc hostname -f
+            ssh -o StrictHostkeyChecking=no jenkins@dacc-01.maif.cozycloud.cc sudo /usr/local/sbin/update-dacc.sh
           '''
         }
       }
@@ -41,16 +54,16 @@ pipeline {
   }
   post {
     failure {
-      mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
-      mattermostSend(color: "danger", channel: "publication", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
+      mattermostSend(color: "danger", channel: "feat---dacc", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
+      mattermostSend(color: "danger", channel: "publication", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> failed")
     }
     success {
-      mattermostSend(color: "good", channel: "feat---dacc", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
-      mattermostSend(color: "good", channel: "publication", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      mattermostSend(color: "good", channel: "feat---dacc", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
+      mattermostSend(color: "good", channel: "publication", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> succeeded")
     }
     aborted {
-      mattermostSend(color: "#000000", channel: "feat---dacc", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
-      mattermostSend(color: "#000000", channel: "publication", message: "DACC deploy on **production** <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
+      mattermostSend(color: "#000000", channel: "feat---dacc", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
+      mattermostSend(color: "#000000", channel: "publication", message: "DACC deploy <${env.BUILD_URL}|build ${env.BUILD_NUMBER}> aborted")
     }
     cleanup {
       /* clean up our workspace */
