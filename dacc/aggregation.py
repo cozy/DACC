@@ -58,15 +58,20 @@ def get_algebraic_funcs_aggregation_query():
     ]
 
 
-            RawMeasure.last_updated > start_date,
-            RawMeasure.last_updated <= end_date,
-        )
-        .group_by(
-            RawMeasure.created_by,
-            RawMeasure.start_date,
-            RawMeasure.group1,
-            RawMeasure.group2,
-            RawMeasure.group3,
+def get_quartiles_funcs_aggregation_query():
+    return [
+        func.percentile_cont(0.5)
+        .within_group(RawMeasure.value)
+        .label("median"),
+        func.percentile_cont(0.25)
+        .within_group(RawMeasure.value)
+        .label("first_quartile"),
+        func.percentile_cont(0.75)
+        .within_group(RawMeasure.value)
+        .label("third_quartile"),
+    ]
+
+
 def get_all_aggregations_query_args(with_quartiles: bool):
     args = [
         RawMeasure.created_by,
@@ -81,7 +86,8 @@ def get_all_aggregations_query_args(with_quartiles: bool):
         args += get_quartiles_funcs_aggregation_query()
     return args
 
-def get_all_aggregations_query_args(with_quartiles: bool):
+
+def get_quartiles_aggregation_query_args():
     args = [
         RawMeasure.created_by,
         RawMeasure.start_date,
@@ -89,10 +95,7 @@ def get_all_aggregations_query_args(with_quartiles: bool):
         RawMeasure.group2,
         RawMeasure.group3,
     ]
-    args += get_distributive_funcs_aggregation_query()
-    args += get_algebraic_funcs_aggregation_query()
-    if with_quartiles:
-        args += get_quartiles_funcs_aggregation_query()
+    args += get_quartiles_funcs_aggregation_query()
     return args
 
 
@@ -104,6 +107,20 @@ def get_filters_all_aggregations(
         RawMeasure.last_updated > start_date,
         RawMeasure.last_updated <= end_date,
     ]
+
+
+def get_filters_quartiles(
+    m_definition: MeasureDefinition, existing_agg: Aggregation, end_date: str
+):
+    return [
+        RawMeasure.measure_name == m_definition.name,
+        RawMeasure.start_date == existing_agg.start_date,
+        RawMeasure.last_updated <= end_date,
+        RawMeasure.group1 == existing_agg.group1,
+        RawMeasure.group2 == existing_agg.group2,
+        RawMeasure.group3 == existing_agg.group3,
+    ]
+
 
 def compute_all_aggregates_from_raw_measures(
     m_definition: MeasureDefinition, start_date: str, end_date: str
@@ -129,9 +146,33 @@ def compute_all_aggregates_from_raw_measures(
     )
 
     return aggregation_query(m_definition, query_args, filter_args)
-        )
-        .all()
+
+
+def compute_quartiles_from_raw_measures(
+    m_definition: MeasureDefinition, existing_agg: Aggregation, end_date: str
+):
+    """Compute quartiles aggregates on raw measures for the given time interval.
+    It is used to recompute an existing aggregate quartiles.
+
+    Args:
+        m_definition (MeasureDefinition): The measure definition
+        existing_agg (Aggregation): The existing aggregate to recompute
+        end_date (str): The last raw measure date to include.
+
+    Returns:
+        RawMeasure: the computed quartiles
+    """
+    query_args = get_quartiles_aggregation_query_args()
+    filters_args = get_filters_quartiles(m_definition, existing_agg, end_date)
+    aggs = aggregation_query(
+        m_definition,
+        query_args,
+        filters_args,
     )
+
+    if len(aggs) > 0:
+        return aggs[0]
+    return None
 
 
 def get_new_aggregation_date(m_definition: MeasureDefinition, date: str):
@@ -170,7 +211,7 @@ def find_dates_bounds(m_definition: MeasureDefinition):
     else:
         start_date = agg_date.last_aggregated_measure_date
 
-    m_most_recent_date = RawMeasure.query_most_recent_date(
+    m_most_recent_date = RawMeasure.query_most_recent_last_updated(
         m_definition.name, start_date
     )
     if m_most_recent_date is None:
@@ -184,7 +225,7 @@ def compute_grouped_std(
 ):
     """Compute grouped sampled standard deviation.
 
-    It comptues from a current aggregation and a new one.
+    It computes from a current aggregation and a new one.
     See https://stackoverflow.com/questions/7753002/adding-combining-standard-deviations # noqa: E501
 
     Args:
@@ -256,6 +297,48 @@ def compute_partial_aggregates(
     return agg
 
 
+def aggregate_to_insert(m_definition: MeasureDefinition, agg: Aggregation):
+    new_agg = Aggregation(
+        measure_name=m_definition.name,
+        start_date=agg.start_date,
+        created_by=agg.created_by,
+        group1=agg.group1,
+        group2=agg.group2,
+        group3=agg.group3,
+        sum=agg.sum,
+        count=agg.count,
+        count_not_zero=agg.count_not_zero,
+        min=agg.min,
+        max=agg.max,
+        avg=agg.avg,
+        std=agg.std,
+    )
+    if m_definition.with_quartiles:
+        # Save quartiles only when explicitly declared
+        new_agg.median = agg.median
+        new_agg.first_quartile = agg.first_quartile
+        new_agg.third_quartile = agg.third_quartile
+    return new_agg
+
+
+def aggregate_to_update(m_definition: MeasureDefinition, agg: Aggregation):
+    aggregate = {
+        "sum": agg.sum,
+        "count": agg.count,
+        "count_not_zero": agg.count_not_zero,
+        "min": agg.min,
+        "max": agg.max,
+        "avg": agg.avg,
+        "std": agg.std,
+    }
+    if m_definition.with_quartiles:
+        # Save quartiles only when explicitly declared
+        aggregate["median"] = agg.median
+        aggregate["first_quartile"] = agg.first_quartile
+        aggregate["third_quartile"] = agg.third_quartile
+    return aggregate
+
+
 # TODO: this could probably be improved, typically by using a view to
 # get the relevant tuples and use its output to perform the aggregation.
 # This would avoid to perform 2 disinct queries on the raw_measures database.
@@ -293,57 +376,51 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
         grouped_measures = compute_all_aggregates_from_raw_measures(
             m_definition, start_date, end_date
         )
+        aggregates = []
         for gm in grouped_measures:
             existing_agg = Aggregation.query_aggregate_by_measure(
                 measure_name, gm
             )
             if existing_agg is None:
                 # This will be an insert in the Aggregation table
-                agg = Aggregation(
-                    measure_name=measure_name,
-                    start_date=gm.start_date,
-                    created_by=gm.created_by,
-                    group1=gm.group1,
-                    group2=gm.group2,
-                    group3=gm.group3,
-                    sum=gm.sum,
-                    count=gm.count,
-                    count_not_zero=gm.count_not_zero,
-                    min=gm.min,
-                    max=gm.max,
-                    avg=gm.avg,
-                    std=gm.std,
-                )
+                agg = aggregate_to_insert(m_definition, gm)
                 db.session.add(agg)
+                aggregates.append(agg)
             else:
                 # This will be an update in the Aggregation table
                 # XXX - This might be improved by avoiding a new query
                 agg = compute_partial_aggregates(
                     measure_name, existing_agg, gm
                 )
+                if m_definition.with_quartiles:
+                    # We cannot compute partial aggregates for quartiles,
+                    # thus all raw measures must be queried.
+                    # Additional check might be necessary to deal with purge
+                    quartiles = compute_quartiles_from_raw_measures(
+                        m_definition, existing_agg, end_date
+                    )
+                    if quartiles is None:
+                        raise Exception(
+                            "No quartile computed for {}"
+                            "on start_date {}".format(measure_name, start_date)
+                        )
+                    agg.median = quartiles.median
+                    agg.first_quartile = quartiles.first_quartile
+                    agg.third_quartile = quartiles.third_quartile
                 db.session.query(Aggregation).filter(
                     Aggregation.id == agg.id
-                ).update(
-                    {
-                        "sum": agg.sum,
-                        "count": agg.count,
-                        "count_not_zero": agg.count_not_zero,
-                        "min": agg.min,
-                        "max": agg.max,
-                        "avg": agg.avg,
-                        "std": agg.std,
-                    },
-                )
+                ).update(aggregate_to_update(m_definition, agg))
+                aggregates.append(agg)
 
         agg_date = get_new_aggregation_date(m_definition, end_date)
 
         if agg_date is None:
             raise Exception(
-                "No measure definition found for {}".format(measure_name)
+                "No new aggregation date for measure {}".format(measure_name)
             )
         db.session.add(agg_date)
         db.session.commit()
-        return grouped_measures, agg_date.last_aggregated_measure_date
+        return aggregates, agg_date.last_aggregated_measure_date
 
     except Exception as err:
         print("Error while aggregating: " + repr(err))

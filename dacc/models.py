@@ -55,7 +55,7 @@ class RawMeasure(db.Model):
         )
 
     @staticmethod
-    def query_most_recent_date(measure_name, from_date):
+    def query_most_recent_last_updated(measure_name, from_date):
         return (
             db.session.query(RawMeasure.last_updated)
             .filter(
@@ -83,6 +83,7 @@ class MeasureDefinition(db.Model):
     aggregation_threshold = db.Column(db.Integer, server_default=text("5"))
     access_app = db.Column(db.Boolean, server_default=text("false"))
     access_public = db.Column(db.Boolean, server_default=text("false"))
+    with_quartiles = db.Column(db.Boolean, server_default=text("false"))
     aggregation_date = relationship(
         "AggregationDate",
         uselist=False,
@@ -147,6 +148,9 @@ class Aggregation(db.Model):
     max = db.Column(db.Numeric(precision=12, scale=2))
     avg = db.Column(db.Numeric(precision=12, scale=2))
     std = db.Column(db.Numeric(precision=12, scale=2), default=0)
+    median = db.Column(db.Numeric(precision=12, scale=2))
+    first_quartile = db.Column(db.Numeric(precision=12, scale=2))
+    third_quartile = db.Column(db.Numeric(precision=12, scale=2))
 
     @staticmethod
     def query_aggregate_by_measure(measure_name, m):

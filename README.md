@@ -97,11 +97,27 @@ A measure is defined by the following fields:
 * `description`: {string} a human-readable description of the measure.
 * `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
 * `execution_frequency`: {string} the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
-* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results)
-* `access_app`: {boolean} whether or not the result shouold be accessible from the producing app.
-* `access_public`: {boolean} whether or not the result should be accessible by any requesting organization.
+* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results).
+* `access_app`: {boolean} whether or not the result shouold be accessible from the producing app. Default is false.
+* `access_public`: {boolean} whether or not the result should be accessible by any requesting organization. Default is false.
+* `with_quartiles`: {boolean} when set to true, median, first quartile and third quartile will be computed alongside the other aggregates.
 
 Note there is no public API to insert a new definition. For security purposes, Cozy restricts this possibility and carefully evaluates each new measure definition to accept it or not.
+
+## Aggregates functions
+
+The available aggregates functions are the following:
+- `sum`: the sum of values
+- `count`: the number of values
+- `count_not_zero`: the number of values different from zero.
+- `min`: the minimum value
+- `max`: the maximum value
+- `avg`: the average of values
+- `std`: the standard deviation
+- `median`: the median of values. Only computed when `with_quartiles` is set in measure definition.
+- `first_quartile`: The first quartile of values. Only computed when `with_quartiles` is set in measure definition.
+- `third_quartile`: the third quartile of values. Only computed when `with_quartiles` is set in measure definition.
+
 
 ## Query an aggregated result
 
