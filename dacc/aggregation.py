@@ -12,13 +12,106 @@ import math
 import logging
 
 
-def aggregate_measures_from_db(
-    measure_name: str, start_date: str, end_date: str
+def aggregation_query(
+    m_definition: MeasureDefinition,
+    query_args: list,
+    filter_args: list,
 ):
-    """Aggregate measures on a time interval.
+    """Execute aggregation query on database
 
     Args:
-        measure_name (str): The measure name
+        m_definition (MeasureDefinition): The measure definition
+        query_args (list): The query (select) arguments
+        filter_args (list): The filter argument
+
+    Returns:
+        list(RawMeasure): the aggregated measures
+    """
+    return (
+        db.session.query(*query_args)
+        .filter(*filter_args)
+        .group_by(
+            RawMeasure.created_by,
+            RawMeasure.start_date,
+            RawMeasure.group1,
+            RawMeasure.group2,
+            RawMeasure.group3,
+        )
+        .all()
+    )
+
+
+def get_distributive_funcs_aggregation_query():
+    return [
+        func.count(RawMeasure.value).label("count"),
+        func.count(func.nullif(RawMeasure.value, 0)).label("count_not_zero"),
+        func.sum(RawMeasure.value).label("sum"),
+        func.min(RawMeasure.value).label("min"),
+        func.max(RawMeasure.value).label("max"),
+    ]
+
+
+def get_algebraic_funcs_aggregation_query():
+    return [
+        func.avg(RawMeasure.value).label("avg"),
+        func.coalesce(func.stddev(RawMeasure.value), 0).label("std"),
+    ]
+
+
+            RawMeasure.last_updated > start_date,
+            RawMeasure.last_updated <= end_date,
+        )
+        .group_by(
+            RawMeasure.created_by,
+            RawMeasure.start_date,
+            RawMeasure.group1,
+            RawMeasure.group2,
+            RawMeasure.group3,
+def get_all_aggregations_query_args(with_quartiles: bool):
+    args = [
+        RawMeasure.created_by,
+        RawMeasure.start_date,
+        RawMeasure.group1,
+        RawMeasure.group2,
+        RawMeasure.group3,
+    ]
+    args += get_distributive_funcs_aggregation_query()
+    args += get_algebraic_funcs_aggregation_query()
+    if with_quartiles:
+        args += get_quartiles_funcs_aggregation_query()
+    return args
+
+def get_all_aggregations_query_args(with_quartiles: bool):
+    args = [
+        RawMeasure.created_by,
+        RawMeasure.start_date,
+        RawMeasure.group1,
+        RawMeasure.group2,
+        RawMeasure.group3,
+    ]
+    args += get_distributive_funcs_aggregation_query()
+    args += get_algebraic_funcs_aggregation_query()
+    if with_quartiles:
+        args += get_quartiles_funcs_aggregation_query()
+    return args
+
+
+def get_filters_all_aggregations(
+    m_definition: MeasureDefinition, start_date: str, end_date: str
+):
+    return [
+        RawMeasure.measure_name == m_definition.name,
+        RawMeasure.last_updated > start_date,
+        RawMeasure.last_updated <= end_date,
+    ]
+
+def compute_all_aggregates_from_raw_measures(
+    m_definition: MeasureDefinition, start_date: str, end_date: str
+):
+    """Compute all aggregates on raw measures for the given time interval.
+
+    Args:
+        m_definition (MeasureDefinition): The measure definition
         start_date (str): The start date of the query
         end_date (str): The end date of the query
 
@@ -29,34 +122,13 @@ def aggregate_measures_from_db(
         start_date = datetime.min
     if end_date is None:
         end_date = datetime.now()
-    return (
-        db.session.query(
-            RawMeasure.created_by,
-            RawMeasure.start_date,
-            RawMeasure.group1,
-            RawMeasure.group2,
-            RawMeasure.group3,
-            func.count(RawMeasure.value).label("count"),
-            func.count(func.nullif(RawMeasure.value, 0)).label(
-                "count_not_zero"
-            ),
-            func.sum(RawMeasure.value).label("sum"),
-            func.min(RawMeasure.value).label("min"),
-            func.max(RawMeasure.value).label("max"),
-            func.avg(RawMeasure.value).label("avg"),
-            func.coalesce(func.stddev(RawMeasure.value), 0).label("std"),
-        )
-        .filter(
-            RawMeasure.measure_name == measure_name,
-            RawMeasure.last_updated > start_date,
-            RawMeasure.last_updated <= end_date,
-        )
-        .group_by(
-            RawMeasure.created_by,
-            RawMeasure.start_date,
-            RawMeasure.group1,
-            RawMeasure.group2,
-            RawMeasure.group3,
+
+    query_args = get_all_aggregations_query_args(m_definition.with_quartiles)
+    filter_args = get_filters_all_aggregations(
+        m_definition, start_date, end_date
+    )
+
+    return aggregation_query(m_definition, query_args, filter_args)
         )
         .all()
     )
@@ -218,8 +290,8 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
             )
             return (None, None)
         measure_name = m_definition.name
-        grouped_measures = aggregate_measures_from_db(
-            measure_name, start_date, end_date
+        grouped_measures = compute_all_aggregates_from_raw_measures(
+            m_definition, start_date, end_date
         )
         for gm in grouped_measures:
             existing_agg = Aggregation.query_aggregate_by_measure(
