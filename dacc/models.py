@@ -196,6 +196,7 @@ class FilteredAggregation:
                             SELECT id, measure_name, start_date, created_by,
                             group1::text, group2::text, group3::text,
                             sum, count, count_not_zero, min, max, avg, std,
+                            median, first_quartile, third_quartile,
                             last_updated
                             FROM aggregation as agg
                             WHERE agg.count >= 
