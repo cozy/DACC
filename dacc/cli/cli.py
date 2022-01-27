@@ -120,6 +120,7 @@ def insert_measure_definition_json(file_path):
                 )
                 db_def.access_app = m_def.get("accessApp")
                 db_def.access_public = m_def.get("accessPublic")
+                db_def.with_quartiles = m_def.get("withQuartiles")
             else:
                 insertion.insert_measure_definition(m_def)
                 print("New definition inserted: {}".format(m_def.get("name")))
