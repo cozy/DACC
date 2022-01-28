@@ -5,8 +5,13 @@ import uuid
 import json
 from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition, FilteredAggregation, Auth
-from sqlalchemy import exc
+from dacc.models import (
+    MeasureDefinition,
+    FilteredAggregation,
+    Auth,
+    Aggregation,
+    AggregationDate,
+)
 import requests
 from urllib.parse import urljoin
 from tabulate import tabulate
@@ -87,6 +92,42 @@ def show_table(table_name):
         query_table = "SELECT * FROM {};".format(table_name)
         table_content = db.session.execute(query_table).fetchall()
         print(tabulate(table_content, headers=column_names))
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@dacc.cli.command("delete-aggregations-from-date")
+@click.argument("measure_name")
+@click.argument("start_date")
+@click.option(
+    "--yes",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="This will remove aggregations in database, are you sure?",
+)
+def delete_aggregation(measure_name, start_date):
+    """Delete all the aggregations computed for a measure, starting from
+    the given date and set the last_aggregation_date to this date.
+    WARNING: this should be used care, as manually setting
+    last_aggregation_date might have side-effect if new measures with old
+    start_date are implied.
+    """
+    try:
+        aggs = Aggregation.query_aggregates_by_measure_name_from_date(
+            measure_name, start_date
+        )
+        for agg in aggs:
+            db.session.delete(agg)
+
+        m_def_id = MeasureDefinition.query_by_name(measure_name).id
+        db.session.query(AggregationDate).filter(
+            AggregationDate.id == m_def_id
+        ).update({"last_aggregated_measure_date": start_date})
+        print("{} deleted aggregates".format(len(aggs)))
+        db.session.commit()
+
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()

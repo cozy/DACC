@@ -168,6 +168,17 @@ class Aggregation(db.Model):
         )
 
     @staticmethod
+    def query_aggregates_by_measure_name_from_date(measure_name, date):
+        return (
+            db.session.query(Aggregation)
+            .filter(
+                Aggregation.measure_name == measure_name,
+                Aggregation.start_date >= date,
+            )
+            .all()
+        )
+
+    @staticmethod
     def query_range_with_threshold(
         measure_name, start_date, end_date, created_by=None
     ):
