@@ -123,9 +123,14 @@ def delete_aggregation(measure_name, start_date):
 
         m_def_id = MeasureDefinition.query_by_name(measure_name).id
         db.session.query(AggregationDate).filter(
-            AggregationDate.id == m_def_id
+            AggregationDate.measure_definition_id == m_def_id
         ).update({"last_aggregated_measure_date": start_date})
         print("{} deleted aggregates".format(len(aggs)))
+        print(
+            "AggregationDate for {} (id {}) updated to date: {}".format(
+                measure_name, m_def_id, start_date
+            )
+        )
         db.session.commit()
 
     except Exception as err:
