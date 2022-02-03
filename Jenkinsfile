@@ -56,7 +56,7 @@ pipeline {
           echo 'Linter check....'
           dir('sandbox/') {
             sh '''
-              docker exec dacc_web pip install black
+              docker exec dacc_web pip install -r /usr/src/app/requirements-dev.txt
               docker exec dacc_web black --check --diff --color .
             '''
           }
