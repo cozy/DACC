@@ -25,6 +25,7 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     traces_sample_rate=configdata.get("sentry:traces_sample_rate", 1.0),
     release="dacc@{}".format(__version__),
+    environment=configdata.get("sentry:environment", "unknown"),
 )
 
 cache = Cache(dacc, config={"CACHE_TYPE": "SimpleCache"})
