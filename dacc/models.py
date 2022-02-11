@@ -198,36 +198,3 @@ class Aggregation(db.Model):
             .order_by(Aggregation.start_date)
             .all()
         )
-
-
-class FilteredAggregation:
-    @staticmethod
-    def create():
-        select_query_sql = """
-                            SELECT id, measure_name, start_date, created_by,
-                            group1::text, group2::text, group3::text,
-                            sum, count, count_not_zero, min, max, avg, std,
-                            median, first_quartile, third_quartile,
-                            last_updated
-                            FROM aggregation as agg
-                            WHERE agg.count >= 
-                                (SELECT m.aggregation_threshold
-                                FROM measure_definition as m 
-                                WHERE m.name = agg.measure_name)
-                            """
-        create_view_sql = (
-            "CREATE MATERIALIZED VIEW filtered_aggregation AS ({})".format(
-                select_query_sql
-            )
-        )
-
-        stmt = text(create_view_sql)
-        db.session.execute(stmt)
-        db.session.commit()
-
-    @staticmethod
-    def udpate():
-        query_sql = "REFRESH MATERIALIZED VIEW filtered_aggregation;"
-        stmt = text(query_sql)
-        db.session.execute(stmt)
-        db.session.commit()

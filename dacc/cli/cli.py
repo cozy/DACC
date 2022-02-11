@@ -7,11 +7,11 @@ from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
 from dacc.models import (
     MeasureDefinition,
-    FilteredAggregation,
     Auth,
     Aggregation,
     AggregationDate,
 )
+from dacc.views import FilteredAggregation
 import requests
 from urllib.parse import urljoin
 from tabulate import tabulate

@@ -308,6 +308,14 @@ When the database needs a migration, i.e. when the structure changed, for instan
 
 It is then possible to run `flask db update` on the DACC server to automatically handle the database migration.
 
+⚠️ Note the materialized views cannot be manually altered. Thus, a migration on the view will trigger a recreation from scratch, which can take some time depending on the volume.
+Hence, the migration script might include the following steps to prevent any service interruption:
+```
+CREATE MATERIALIZED VIEW tmp AS ...;
+DROP MATERIALIZED VIEW tmp;
+ALTER MATERIALIZED VIEW tmp RENAME TO viewName;
+```
+
 ## Insert definitions
 
 To insert measure definitions, simply copy `assets/definitions-example.json`

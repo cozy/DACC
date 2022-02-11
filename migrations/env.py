@@ -6,6 +6,9 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
+from alembic_utils.replaceable_entity import register_entities
+
+from dacc.views import FilteredAggregation
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -32,6 +35,9 @@ target_metadata = current_app.extensions["migrate"].db.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+
+register_entities([FilteredAggregation.get_pg_view()])
 
 
 def run_migrations_offline():
