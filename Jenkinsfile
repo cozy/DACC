@@ -43,7 +43,6 @@ pipeline {
             '''
             sh '''
               docker exec dacc_web flask db upgrade
-              docker exec dacc_web flask create-filtered-aggregation-view
               docker exec dacc_web flask insert-definitions-json -f assets/definitions-example.json
             '''
           }
