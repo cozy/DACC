@@ -29,9 +29,11 @@ class FilteredAggregation:
         )
 
     @classmethod
-    def create(cls):
+    def create(cls, name=None):
+        if name is None:
+            name = cls.name
         create_view_sql = "CREATE MATERIALIZED VIEW {} AS ({})".format(
-            cls.name, cls.definition
+            name, cls.definition
         )
 
         stmt = text(create_view_sql)
@@ -46,8 +48,25 @@ class FilteredAggregation:
         db.session.commit()
 
     @classmethod
-    def delete(cls):
+    def delete(cls, name=None):
+        if name is None:
+            name = cls.name
         query_sql = "DROP MATERIALIZED VIEW {};".format(cls.name)
         stmt = text(query_sql)
         db.session.execute(stmt)
         db.session.commit()
+
+    @classmethod
+    def recreate_view(cls):
+        tmp_view_name = "tmp_{}".format(cls.name)
+        print("Create new view...")
+        FilteredAggregation.create(tmp_view_name)
+        print("Delete old view...")
+        FilteredAggregation.delete(cls.name)
+        query_sql = "ALTER MATERIALIZED VIEW {} RENAME TO {};".format(
+            tmp_view_name, cls.name
+        )
+        stmt = text(query_sql)
+        db.session.execute(stmt)
+        db.session.commit()
+        print("Done!")

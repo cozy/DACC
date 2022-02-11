@@ -326,6 +326,16 @@ def delete_filtered_aggregation_view():
         raise click.Abort()
 
 
+@view.command("recreate-filtered-aggregation")
+def recreate_filtered_aggregation_view():
+    """Recreate safely the filtered aggregation view"""
+    try:
+        FilteredAggregation.recreate_view()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
 @dacc.cli.group()
 def token():
     """Token management commands."""

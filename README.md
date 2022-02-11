@@ -312,8 +312,8 @@ It is then possible to run `flask db update` on the DACC server to automatically
 Hence, the migration script might include the following steps to prevent any service interruption:
 ```
 CREATE MATERIALIZED VIEW tmp AS ...;
-DROP MATERIALIZED VIEW tmp;
-ALTER MATERIALIZED VIEW tmp RENAME TO viewName;
+DROP MATERIALIZED VIEW myView;
+ALTER MATERIALIZED VIEW tmp RENAME TO myView;
 ```
 
 ## Insert definitions

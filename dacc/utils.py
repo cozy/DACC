@@ -1,5 +1,16 @@
 from dacc import consts
 from datetime import datetime
+from sqlalchemy.engine.reflection import Inspector
+from alembic import op
+
+
+def check_table_or_view_exists(name):
+    conn = op.get_bind()
+    inspector = Inspector.from_engine(conn)
+    tables = inspector.get_table_names()
+    views = inspector.get_view_names()
+    objects = tables + views
+    return name in objects
 
 
 def is_dates_interval_higher(
