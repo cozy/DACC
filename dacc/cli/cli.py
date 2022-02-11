@@ -290,7 +290,13 @@ def compute_all_aggregations(force):
         raise click.Abort()
 
 
-@dacc.cli.command("create-filtered-aggregation-view")
+@dacc.cli.group()
+def view():
+    """View management commands."""
+    pass
+
+
+@view.command("create-filtered-aggregation")
 def create_filtered_aggregation_view():
     """Create the filtered aggregation view"""
     try:
@@ -300,11 +306,21 @@ def create_filtered_aggregation_view():
         raise click.Abort()
 
 
-@dacc.cli.command("update-filtered-aggregation-view")
+@view.command("update-filtered-aggregation")
 def refresh_filtered_aggregation_view():
     """Refresh the filtered aggregation view"""
     try:
         FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@view.command("delete-filtered-aggregation")
+def delete_filtered_aggregation_view():
+    """Delete the filtered aggregation view"""
+    try:
+        FilteredAggregation.delete()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()
