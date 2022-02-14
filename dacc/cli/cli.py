@@ -22,7 +22,13 @@ def abort_if_false(ctx, param, value):
         ctx.abort()
 
 
-@dacc.cli.command("reset-all-tables")
+@dacc.cli.group()
+def table():
+    """SQL tables commands."""
+    pass
+
+
+@table.command("reset-all")
 @click.option(
     "--yes",
     is_flag=True,
@@ -45,7 +51,7 @@ def reset_tables():
         raise click.Abort()
 
 
-@dacc.cli.command("create-all-tables")
+@table.command("create-all")
 def create_tables():
     """Create all tables in database"""
     try:
@@ -56,7 +62,7 @@ def create_tables():
         raise click.Abort()
 
 
-@dacc.cli.command("reset-table")
+@table.command("reset")
 @click.argument("table_name")
 def reset_table(table_name):
     """Reset a table in database"""
@@ -74,7 +80,7 @@ def reset_table(table_name):
         raise click.Abort()
 
 
-@dacc.cli.command("show-table")
+@table.command("show")
 @click.argument("table_name")
 def show_table(table_name):
     """Show a table content"""
@@ -178,7 +184,13 @@ def insert_measure_definition_json(file_path):
         raise click.Abort()
 
 
-@dacc.cli.command("insert-fixtures-from-file")
+@dacc.cli.group()
+def measures():
+    """Measures commands."""
+    pass
+
+
+@measures.command("insert-fixtures-from-file")
 @click.argument("fixture_type")
 def insert_fixtures_definition(fixture_type):
     """Insert fixture file in database"""
@@ -192,7 +204,7 @@ def insert_fixtures_definition(fixture_type):
     db.session.commit()
 
 
-@dacc.cli.command("insert-random-measures")
+@measures.command("insert-random-measures")
 @click.option("-n", "n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
 @click.option(
@@ -207,7 +219,7 @@ def insert_fixtures(n_measures, days, starting_day, measure_name):
     )
 
 
-@dacc.cli.command("send-random-measures")
+@measures.command("send-random-measures")
 @click.argument("dacc_address")
 @click.option("-n", "n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
@@ -292,7 +304,7 @@ def compute_all_aggregations(force):
 
 @dacc.cli.group()
 def view():
-    """View management commands."""
+    """View commands."""
     pass
 
 
