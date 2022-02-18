@@ -42,6 +42,7 @@ def test_aggregations():
             data=raw_measures,
             columns=[
                 "created_by",
+                "last_updated",
                 "start_date",
                 "group1",
                 "group2",
@@ -54,7 +55,9 @@ def test_aggregations():
         df_raw = df_raw.dropna(axis="columns")
 
         df_raw = convert_columns(df_raw)
-        columns.remove("value")  #  Remove value column to group by
+        # Remove columns to group by
+        columns.remove("value")
+        columns.remove("last_updated")
 
         sums = df_raw.groupby(columns, as_index=False).sum()
         counts = df_raw.groupby(columns, as_index=False).count()

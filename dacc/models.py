@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, text
 from sqlalchemy.schema import DropTable
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.ext.hybrid import hybrid_method
+from datetime import timedelta
 
 
 @compiles(DropTable, "postgresql")
@@ -43,6 +45,7 @@ class RawMeasure(db.Model):
         return (
             db.session.query(
                 RawMeasure.created_by,
+                RawMeasure.last_updated,
                 RawMeasure.start_date,
                 RawMeasure.group1,
                 RawMeasure.group2,
@@ -65,6 +68,10 @@ class RawMeasure(db.Model):
             .order_by(RawMeasure.last_updated.desc())
             .first()
         )
+
+    @hybrid_method
+    def max_retention_date(self, max_days):
+        return self.last_updated + timedelta(days=max_days)
 
 
 class MeasureDefinition(db.Model):
