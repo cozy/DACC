@@ -101,6 +101,7 @@ A measure is defined by the following fields:
 * `access_app`: {boolean} whether or not the result shouold be accessible from the producing app. Default is false.
 * `access_public`: {boolean} whether or not the result should be accessible by any requesting organization. Default is false.
 * `with_quartiles`: {boolean} when set to true, median, first quartile and third quartile will be computed alongside the other aggregates.
+* `max_days_to_update_quartile`: {number} the maximum days a quartile can be safely updated after its first creation. Below this threshold, the measures cannot be purged. Default is 100.
 
 Note there is no public API to insert a new definition. For security purposes, Cozy restricts this possibility and carefully evaluates each new measure definition to accept it or not.
 
@@ -328,12 +329,25 @@ JSON file stored in `dacc/assets/definitions.json` by default.
 For each definition found, it either inserts it, if it does not exist,
 or updates it otherwise.
 
-### Definition removal
+## Definition removal
 
 Definitions removed from file are not removed from database by
 `insert-definitions-json`. Currently, definitions should be removed by
 hand from database. A future cli command could be added to remove
 definitions.
+
+## Measures purge
+
+Raw measures can be purged with the commands:
+
+-  `flask purge measure <measure_name>`.
+-  `flask purge all-measures`.
+
+A `-d max-date` option can be passed to specify the maximum date for a measure to be purged.
+
+Note the measures involving quartiles cannot be purged as easily as the others, because quartiles cannot be partitioned: one needs all the measures to compute the quartile. Thus, the `max_days_to_update_quartile` is used to determine if the measures can be removed.
+
+When measures are purged, the impacted aggregate are updated to save the purge date in the `last_raw_measures_purged` column.
 
 ## Logging
 
@@ -345,9 +359,9 @@ logging:
   logger_criticity: info
 ```
 
-## Community
+# Community
 
-### What's Cozy?
+## What's Cozy?
 
 <div align="center">
   <a href="https://cozy.io">
@@ -373,7 +387,7 @@ You can reach the Cozy Community by:
 - Say Hi! on [Twitter][twitter]
 
 
-## License
+# License
 
 DACC is developed by Cozy and distributed under the [AGPL v3 license][agpl-3.0].
 
