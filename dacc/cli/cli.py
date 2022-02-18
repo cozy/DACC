@@ -12,9 +12,11 @@ from dacc.models import (
     AggregationDate,
 )
 from dacc.views import FilteredAggregation
+from dacc.purge import purge_measures
 import requests
 from urllib.parse import urljoin
 from tabulate import tabulate
+import dateparser
 
 
 def abort_if_false(ctx, param, value):
@@ -103,6 +105,44 @@ def show_table(table_name):
         raise click.Abort()
 
 
+@dacc.cli.group()
+def purge():
+    """Purge commands."""
+    pass
+
+
+@purge.command("measure")
+@click.argument("measure_name")
+@click.option(
+    "-d",
+    "--max-date",
+)
+def purge_measure(measure_name, max_date):
+    try:
+        m_def = MeasureDefinition.query_by_name(measure_name)
+        max_date = dateparser.parse(max_date)
+        purge_measures(m_def, max_date)
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@purge.command("all-measures")
+@click.option(
+    "-d",
+    "--max-date",
+)
+def purge_all_measures(max_date):
+    try:
+        m_defs = db.session.query(MeasureDefinition).all()
+        max_date = dateparser.parse(max_date)
+        for m_def in m_defs:
+            purge_measures(m_def, max_date)
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
 @dacc.cli.command("delete-aggregations-from-date")
 @click.argument("measure_name")
 @click.argument("start_date")
@@ -146,7 +186,7 @@ def delete_aggregation(measure_name, start_date):
 
 @dacc.cli.command("insert-definitions-json")
 @click.option(
-    "-f", "file_path", default="assets/definitions.json", show_default=True
+    "-f", "--file_path", default="assets/definitions.json", show_default=True
 )
 def insert_measure_definition_json(file_path):
     """Insert measure definitions from file"""
@@ -205,7 +245,7 @@ def insert_fixtures_definition(fixture_type):
 
 
 @measures.command("insert-random-measures")
-@click.option("-n", "n_measures", default=1, show_default=True)
+@click.option("-n", "--n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
 @click.option(
     "--starting-day", "starting_day", default="2021-05-01", show_default=True
@@ -221,7 +261,7 @@ def insert_fixtures(n_measures, days, starting_day, measure_name):
 
 @measures.command("send-random-measures")
 @click.argument("dacc_address")
-@click.option("-n", "n_measures", default=1, show_default=True)
+@click.option("-n", "--n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
 @click.option(
     "--starting-day", "starting_day", default="2021-05-01", show_default=True
