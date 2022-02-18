@@ -4,7 +4,14 @@ from sqlalchemy.engine.reflection import Inspector
 from alembic import op
 
 
-def check_table_or_view_exists(name):
+def check_table_or_view_exists(name: str):
+    """Check if a table or a view actually exists in database
+
+    Args:
+        name (str): The table or view name
+    Returns:
+        bool: True if the name matches an existing table or view.
+    """
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
     tables = inspector.get_table_names()
