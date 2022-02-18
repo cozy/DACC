@@ -84,6 +84,9 @@ class MeasureDefinition(db.Model):
     access_app = db.Column(db.Boolean, server_default=text("false"))
     access_public = db.Column(db.Boolean, server_default=text("false"))
     with_quartiles = db.Column(db.Boolean, server_default=text("false"))
+    max_days_to_update_quartile = db.Column(
+        db.Integer, server_default=text("100")
+    )
     aggregation_date = relationship(
         "AggregationDate",
         uselist=False,
@@ -137,6 +140,7 @@ class Aggregation(db.Model):
     measure_name = db.Column(db.String(100))
     start_date = db.Column(db.TIMESTAMP)
     last_updated = db.Column(db.DateTime, default=func.now())
+    last_raw_measures_purged = db.Column(db.TIMESTAMP)
     created_by = db.Column(db.String(100))
     group1 = db.Column(JSONB(none_as_null=True))
     group2 = db.Column(JSONB(none_as_null=True))
