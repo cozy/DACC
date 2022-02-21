@@ -3,6 +3,8 @@ import sys
 import os
 import uuid
 import json
+import dateparser
+import warnings
 from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
 from dacc.models import (
@@ -16,7 +18,13 @@ from dacc.purge import purge_measures
 import requests
 from urllib.parse import urljoin
 from tabulate import tabulate
-import dateparser
+
+# See https://github.com/scrapinghub/dateparser/issues/1013
+warnings.filterwarnings(
+    "ignore",
+    message="The localize method is no longer necessary, as this time zone"
+    + " supports the fold attribute",
+)
 
 
 def abort_if_false(ctx, param, value):
@@ -120,7 +128,8 @@ def purge():
 def purge_measure(measure_name, max_date):
     try:
         m_def = MeasureDefinition.query_by_name(measure_name)
-        max_date = dateparser.parse(max_date)
+        if max_date is not None:
+            max_date = dateparser.parse(max_date)
         purge_measures(m_def, max_date)
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
@@ -135,7 +144,8 @@ def purge_measure(measure_name, max_date):
 def purge_all_measures(max_date):
     try:
         m_defs = db.session.query(MeasureDefinition).all()
-        max_date = dateparser.parse(max_date)
+        if max_date is not None:
+            max_date = dateparser.parse(max_date)
         for m_def in m_defs:
             purge_measures(m_def, max_date)
     except Exception as err:

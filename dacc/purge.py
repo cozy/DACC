@@ -52,7 +52,6 @@ def get_filters_measures(
         RawMeasure.last_updated <= purge_date,
     ]
     quartile_filter = get_quartiles_filter(m_definition)
-    print("quartile filter : {}".format(quartile_filter))
     if len(quartile_filter) > 0:
         return filters + quartile_filter
     return filters
@@ -154,8 +153,8 @@ def purge_measures(
             n_deleted_measures, m_definition.name
         )
     )
-    # if n_deleted_measures < 1:
-    #     return
+    if n_deleted_measures < 1:
+        return
 
     # Update impacted aggregates
     n_updated_aggregates = update_impacted_aggregates(
