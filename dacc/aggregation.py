@@ -5,11 +5,15 @@ from dacc.models import (
     MeasureDefinition,
 )
 from dacc import db, validate
-from sqlalchemy import func
+from sqlalchemy import func, bindparam, update
 from datetime import datetime
 from copy import copy
 import math
 import logging
+import time
+import numpy as np
+import json
+from typing import Any, List
 
 
 def aggregation_query(
@@ -323,6 +327,7 @@ def aggregate_to_insert(m_definition: MeasureDefinition, agg: Aggregation):
 
 def aggregate_to_update(m_definition: MeasureDefinition, agg: Aggregation):
     aggregate = {
+        "b_id": agg.id,  # "id" cannot be mapped by SQLAlchemy
         "sum": agg.sum,
         "count": agg.count,
         "count_not_zero": agg.count_not_zero,
@@ -339,9 +344,103 @@ def aggregate_to_update(m_definition: MeasureDefinition, agg: Aggregation):
     return aggregate
 
 
-# TODO: this could probably be improved, typically by using a view to
-# get the relevant tuples and use its output to perform the aggregation.
-# This would avoid to perform 2 disinct queries on the raw_measures database.
+def build_aggregate_key(agg: Aggregation):
+    """Build a dict key to retrieve aggregates
+
+    After querying existing aggregates, we store them in a dict
+    with a key used to retrieve them quickly, which is a concatenation
+    of the search terms.
+
+    Args:
+        agg (Aggregation): The aggregate to build the key on
+
+    Returns:
+        str: The built key
+    """
+    date_key = agg.start_date.isoformat()
+    created_by_key = agg.created_by or "null"
+    group1_key = json.dumps(agg.group1)
+    group2_key = json.dumps(agg.group2)
+    group3_key = json.dumps(agg.group3)
+    key = (
+        date_key
+        + "_"
+        + created_by_key
+        + "_"
+        + group1_key
+        + "_"
+        + group2_key
+        + "_"
+        + group3_key
+    )
+    return key
+
+
+def find_existing_aggregate(
+    existing_aggregates: List[Aggregation], new_agg: Aggregation
+):
+    key = build_aggregate_key(new_agg)
+    if key in existing_aggregates:
+        return existing_aggregates[key]
+    return None
+
+
+def get_column_filter(grouped_measures: List[Aggregation], column: Any):
+    """Get the filter to apply to the given Aggregation column
+
+    Args:
+        grouped_measures (List[Aggregation]): The aggregated raw measures
+        column (Any): An Aggregation column
+
+    Returns:
+        Filter: The filter to apply on this column
+    """
+    column_name = column.name
+    values = np.unique(
+        [
+            json.dumps(gm[column_name])
+            if type(gm[column_name]) is dict
+            else gm[column_name]
+            for gm in grouped_measures
+            if gm[column_name] is not None
+        ]
+    ).tolist()
+
+    if len(values) == 0:
+        return column.is_(None)
+    else:
+        return column.in_(values)
+
+
+def query_existing_aggregates(
+    measure_name: str, grouped_measures: List[Aggregation]
+):
+    """Query the existing aggregates based on aggregated raw measures.
+
+    Args:
+        measure_name (str): The measure name
+        grouped_measures (List[Aggregation]): The list of aggregated measures
+
+    Returns:
+        dict: A dict of existing aggregates
+    """
+    filters = [
+        Aggregation.measure_name == measure_name,
+    ]
+    filters.append(get_column_filter(grouped_measures, Aggregation.start_date))
+    filters.append(get_column_filter(grouped_measures, Aggregation.created_by))
+    filters.append(get_column_filter(grouped_measures, Aggregation.group1))
+    filters.append(get_column_filter(grouped_measures, Aggregation.group2))
+    filters.append(get_column_filter(grouped_measures, Aggregation.group3))
+
+    aggs = db.session.query(Aggregation).filter(*filters).all()
+    existing_aggregates = {}
+    for agg in aggs:
+        key = build_aggregate_key(agg)
+        existing_aggregates[key] = agg
+    return existing_aggregates
+
+
 def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
     """Aggregate raw measures on a time period and save them in the
     Aggregation table.
@@ -372,23 +471,32 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
                 )
             )
             return (None, None)
+
+        start_time = time.time()
+
         measure_name = m_definition.name
         grouped_measures = compute_all_aggregates_from_raw_measures(
             m_definition, start_date, end_date
         )
-        aggregates = []
-        for gm in grouped_measures:
-            existing_agg = Aggregation.query_aggregate_by_measure(
-                measure_name, gm
+        existing_aggregates = []
+        if len(grouped_measures) > 0:
+            existing_aggregates = query_existing_aggregates(
+                measure_name, grouped_measures
             )
+
+        all_aggregates = []
+        aggs_to_insert = []
+        aggs_to_update = []
+        for gm in grouped_measures:
+            existing_agg = find_existing_aggregate(existing_aggregates, gm)
+
             if existing_agg is None:
                 # This will be an insert in the Aggregation table
                 agg = aggregate_to_insert(m_definition, gm)
-                db.session.add(agg)
-                aggregates.append(agg)
+                aggs_to_insert.append(agg)
+                all_aggregates.append(agg)
             else:
                 # This will be an update in the Aggregation table
-                # XXX - This might be improved by avoiding a new query
                 agg = compute_partial_aggregates(
                     measure_name, existing_agg, gm
                 )
@@ -407,10 +515,20 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
                     agg.median = quartiles.median
                     agg.first_quartile = quartiles.first_quartile
                     agg.third_quartile = quartiles.third_quartile
-                db.session.query(Aggregation).filter(
-                    Aggregation.id == agg.id
-                ).update(aggregate_to_update(m_definition, agg))
-                aggregates.append(agg)
+                    all_aggregates.append(agg)
+
+                aggs_to_update.append(aggregate_to_update(m_definition, agg))
+
+        if len(aggs_to_insert) > 0:
+            # Insert all new aggregates
+            db.session.add_all(aggs_to_insert)
+
+        if len(aggs_to_update) > 0:
+            # Update all the existing aggregates
+            stmt = update(Aggregation).where(
+                Aggregation.id == bindparam("b_id")
+            )
+            db.session.execute(stmt, aggs_to_update)
 
         agg_date = get_new_aggregation_date(m_definition, end_date)
 
@@ -420,7 +538,12 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
             )
         db.session.add(agg_date)
         db.session.commit()
-        return aggregates, agg_date.last_aggregated_measure_date
+
+        logging.debug(
+            "--- %s seconds to update aggregate---"
+            % (time.time() - start_time)
+        )
+        return all_aggregates, agg_date.last_aggregated_measure_date
 
     except Exception as err:
         print("Error while aggregating: " + repr(err))

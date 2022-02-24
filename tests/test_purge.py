@@ -34,6 +34,7 @@ def insert_definition(name, with_quartiles=False):
 
 def get_aggregate(measure_name, start_date):
     measure = RawMeasure(
+        measure_name=measure_name,
         start_date=start_date,
         created_by="dummy-app",
         group1={"key1": 1},
@@ -110,8 +111,9 @@ def test_purge_measures():
     assert len(RawMeasure.query_by_name(dummy_name3)) == 10
 
     agg_1 = get_aggregate(dummy_name1, "2022-01-01")
-    agg_2 = get_aggregate(dummy_name1, "2022-01-01")
-    agg_3 = get_aggregate(dummy_name1, "2022-01-01")
+    agg_2 = get_aggregate(dummy_name2, "2022-01-01")
+    agg_3 = get_aggregate(dummy_name3, "2022-01-01")
+
     assert agg_1.last_raw_measures_purged is not None
     assert agg_2.last_raw_measures_purged is not None
     assert agg_3.last_raw_measures_purged is not None
