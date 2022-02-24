@@ -39,7 +39,8 @@ class RawMeasure(db.Model):
     group2 = db.Column(JSONB(none_as_null=True))
     group3 = db.Column(JSONB(none_as_null=True))
 
-    # TODO: indexing on last_updated might be good
+    db.Index("idx_by_mname_and_lupdated", measure_name, last_updated)
+
     @staticmethod
     def query_by_name(measure_name):
         return (
@@ -162,6 +163,22 @@ class Aggregation(db.Model):
     median = db.Column(db.Numeric(precision=12, scale=2))
     first_quartile = db.Column(db.Numeric(precision=12, scale=2))
     third_quartile = db.Column(db.Numeric(precision=12, scale=2))
+
+    db.Index(
+        "idx_by_mname_and_sdate_and_created_by_and_groups",
+        measure_name,
+        start_date,
+        created_by,
+        group1,
+        group2,
+        group3,
+    )
+
+    db.Index(
+        "idx_by_mname_and_sdate",
+        measure_name,
+        start_date,
+    )
 
     @staticmethod
     def query_aggregate_by_measure(measure_name, m):
