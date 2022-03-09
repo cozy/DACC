@@ -32,7 +32,9 @@ class RawMeasure(db.Model):
     measure_name = db.Column(db.String(100))
     value = db.Column(db.Numeric(precision=12, scale=2), default=1)
     start_date = db.Column(db.TIMESTAMP)
-    last_updated = db.Column(db.DateTime, default=func.now())
+    last_updated = db.Column(
+        db.DateTime, default=func.now()
+    )  # TODO: a trigger should update this field
     aggregation_period = db.Column(db.String(100))
     created_by = db.Column(db.String(100))
     group1 = db.Column(JSONB(none_as_null=True))
@@ -147,7 +149,9 @@ class Aggregation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_name = db.Column(db.String(100))
     start_date = db.Column(db.TIMESTAMP)
-    last_updated = db.Column(db.DateTime, default=func.now())
+    last_updated = db.Column(
+        db.DateTime, default=func.now()
+    )  # TODO: a trigger should update this field
     last_raw_measures_purged = db.Column(db.TIMESTAMP)
     created_by = db.Column(db.String(100))
     group1 = db.Column(JSONB(none_as_null=True))

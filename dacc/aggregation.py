@@ -335,6 +335,7 @@ def aggregate_to_update(m_definition: MeasureDefinition, agg: Aggregation):
         "max": agg.max,
         "avg": agg.avg,
         "std": agg.std,
+        "last_updated": datetime.now(),  # TODO: should be a trigger
     }
     if m_definition.with_quartiles:
         # Save quartiles only when explicitly declared
