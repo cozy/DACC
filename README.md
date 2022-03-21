@@ -307,7 +307,7 @@ flask token delete-org # Remove an organization
 
 When the database needs a migration, i.e. when the structure changed, for instance a new column, one needs to run `flask db migrate`. A migration script is then generated, that must be commited.
 
-It is then possible to run `flask db update` on the DACC server to automatically handle the database migration.
+It is then possible to run `flask db upgrade` on the DACC server to automatically handle the database migration.
 
 ⚠️ Note the materialized views cannot be manually altered. Thus, a migration on the view will trigger a recreation from scratch, which can take some time depending on the volume.
 Hence, the migration script might include the following steps to prevent any service interruption:

@@ -3,6 +3,7 @@ from dacc.models import (
     Aggregation,
     AggregationDate,
     MeasureDefinition,
+    RefusedRawMeasure,
 )
 from dacc import db, validate
 from sqlalchemy import func, bindparam, update
@@ -442,6 +443,32 @@ def query_existing_aggregates(
     return existing_aggregates
 
 
+def backup_rejected_raw_measures(
+    m_definition: MeasureDefinition, agg: Aggregation, end_date: str
+):
+    """Backup raw measures that cannot be aggregated.
+
+    When raw measures are purged, quartiles cannot be computed anymore.
+    We block this aggregation and backup the involved raw measures
+    in the RefusedRawMeasures table.
+
+    Args:
+        m_definition (MeasureDefinition): The measure definition
+        agg (Aggregation): The computed aggregate
+        end_date (str): The end date to query raw measures
+    """
+    m_filter = get_filters_quartiles(m_definition, agg, end_date)
+    measures = db.session.query(RawMeasure).filter(*m_filter).all()
+    for m in measures:
+        RefusedRawMeasure.insert_from_raw_measure(m)
+
+    logging.error(
+        "Prevent aggregate quartiles on purged measures {} - {}".format(
+            m_definition.name, agg.start_date
+        )
+    )
+
+
 def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
     """Aggregate raw measures on a time period and save them in the
     Aggregation table.
@@ -502,6 +529,14 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
                     measure_name, existing_agg, gm
                 )
                 if m_definition.with_quartiles:
+                    if existing_agg.last_raw_measures_purged:
+                        # Measures with quartiles should not be aggregated
+                        # after a purge, since raw values are deleted.
+                        backup_rejected_raw_measures(
+                            m_definition, agg, end_date
+                        )
+                        continue
+
                     # We cannot compute partial aggregates for quartiles,
                     # thus all raw measures must be queried.
                     # Additional check might be necessary to deal with purge

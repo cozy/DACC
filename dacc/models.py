@@ -77,6 +77,36 @@ class RawMeasure(db.Model):
         return self.last_updated + timedelta(days=max_days)
 
 
+class RefusedRawMeasure(db.Model):
+    # TODO: mutualize with RawMeasure?
+    id = db.Column(db.Integer, primary_key=True)
+    measure_name = db.Column(db.String(100))
+    value = db.Column(db.Numeric(precision=12, scale=2), default=1)
+    start_date = db.Column(db.TIMESTAMP)
+    last_updated = db.Column(db.DateTime, default=func.now())
+    aggregation_period = db.Column(db.String(100))
+    created_by = db.Column(db.String(100))
+    group1 = db.Column(JSONB(none_as_null=True))
+    group2 = db.Column(JSONB(none_as_null=True))
+    group3 = db.Column(JSONB(none_as_null=True))
+    rejected_date = db.Column(db.DateTime, default=func.now())
+
+    @staticmethod
+    def insert_from_raw_measure(raw_measure: RawMeasure):
+        refused_rm = RefusedRawMeasure(
+            measure_name=raw_measure.measure_name,
+            value=raw_measure.value,
+            start_date=raw_measure.start_date,
+            last_updated=raw_measure.last_updated,
+            aggregation_period=raw_measure.aggregation_period,
+            created_by=raw_measure.created_by,
+            group1=raw_measure.group1,
+            group2=raw_measure.group2,
+            group3=raw_measure.group3,
+        )
+        db.session.add(refused_rm)
+
+
 class MeasureDefinition(db.Model):
     # TODO add integrity checks such as control on group order, exec freq
     # consistency w.r.t. agg period, ...

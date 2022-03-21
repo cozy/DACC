@@ -1,11 +1,13 @@
 import pytest
-from dacc import db, aggregation
+from dacc import db, aggregation, purge
 from dacc.models import (
     RawMeasure,
     AggregationDate,
     Aggregation,
     MeasureDefinition,
+    RefusedRawMeasure,
 )
+
 import pandas as pd
 from sqlalchemy import distinct
 import numpy as np
@@ -463,3 +465,55 @@ def test_incremental_aggregation_quartiles():
     assert agg[2].median == 17
     assert agg[2].first_quartile == 17
     assert agg[2].third_quartile == 17
+
+
+def test_backup_rejected_raw_measures():
+    measure_name = "average-operation-amount"
+    m_def = MeasureDefinition.query_by_name(measure_name)
+
+    all_refused = db.session.query(RefusedRawMeasure).all()
+    assert len(all_refused) == 0
+
+    raw_measures = RawMeasure.query_by_name(measure_name)
+    assert len(raw_measures) > 0
+
+    purge.purge_measures(m_def)
+
+    raw_measures = RawMeasure.query_by_name(measure_name)
+    assert len(raw_measures) == 0
+
+    measures = [
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=12,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=23,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=40,
+            group1={"category": "hobby"},
+        ),
+    ]
+    for m in measures:
+        db.session.add(m)
+
+    aggs, date = aggregation.aggregate_raw_measures(m_def)
+
+    all_refused = db.session.query(RefusedRawMeasure).all()
+    assert len(all_refused) == 3
+    assert all_refused[0].value == 23
+    assert all_refused[0].rejected_date is not None
+    assert all_refused[1].value == 12
+    assert all_refused[1].rejected_date is not None
+    assert all_refused[2].value == 40
+    assert all_refused[2].rejected_date is not None
+
+    assert len(aggs) == 0
