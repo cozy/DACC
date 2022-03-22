@@ -3,7 +3,7 @@ import sys
 import os
 import uuid
 import json
-import dateparser
+from datetime import datetime, timedelta
 import warnings
 from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
@@ -121,33 +121,37 @@ def purge():
 
 @purge.command("measure")
 @click.argument("measure_name")
-@click.option(
-    "-d",
-    "--max-date",
-)
-def purge_measure(measure_name, max_date):
+@click.option("-d", "--days", default=90, show_default="90 days")
+def purge_measure(measure_name, days):
+    "Purge measures older than the given days"
     try:
         m_def = MeasureDefinition.query_by_name(measure_name)
-        if max_date is not None:
-            max_date = dateparser.parse(max_date)
-        purge_measures(m_def, max_date)
+        purge_date = datetime.today() - timedelta(days=days)
+        print(
+            "Purge measures older than: {}".format(
+                purge_date.strftime("%Y-%m-%d")
+            )
+        )
+        purge_measures(m_def, purge_date)
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()
 
 
 @purge.command("all-measures")
-@click.option(
-    "-d",
-    "--max-date",
-)
-def purge_all_measures(max_date):
+@click.option("-d", "--days", default=90, show_default="90 days")
+def purge_all_measures(days):
+    "Purge all measures older than the given days"
     try:
         m_defs = db.session.query(MeasureDefinition).all()
-        if max_date is not None:
-            max_date = dateparser.parse(max_date)
         for m_def in m_defs:
-            purge_measures(m_def, max_date)
+            purge_date = datetime.today() - timedelta(days=days)
+            print(
+                "Purge measures older than: {}".format(
+                    purge_date.strftime("%Y-%m-%d")
+                )
+            )
+            purge_measures(m_def, purge_date)
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()
@@ -196,7 +200,10 @@ def delete_aggregation(measure_name, start_date):
 
 @dacc.cli.command("insert-definitions-json")
 @click.option(
-    "-f", "--file_path", default="assets/definitions.json", show_default=True
+    "-f",
+    "--file_path",
+    default="assets/definitions.json",
+    show_default=True,
 )
 def insert_measure_definition_json(file_path):
     """Insert measure definitions from file"""
