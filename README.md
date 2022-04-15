@@ -41,7 +41,6 @@ HTTP/1.0 201 CREATED
 Content-Type: application/json
 Content-Length: 12
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 13:22:24 GMT
 
 {
   "ok": "true"
@@ -49,10 +48,10 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests.
+ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by your DACC URL. For example, `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests.
 
 
-ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
+ℹ️ The `token` is automatically injected by the stack when using a remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
 To know how to use a remote-doctype from a Cozy app, see the [stack documentation](https://docs.cozy.io/en/cozy-stack/remote/).
 
 ### Measure format
@@ -62,7 +61,7 @@ Here is an example of a valid measure:
 {
   "measureName": "konnector-event-daily",
   "value": 1,
-  "startDate": "2021-05-04",
+  "startDate": "2022-01-01",
   "createdBy": "ecolyo",
   "group1": {
       "slug": "enedis"
@@ -79,7 +78,7 @@ Here is an example of a valid measure:
 The expected fields are the following:
 * `measureName`: {string} the name of the measure. It must match an existing measure name on the DACC server.
 * `value`: {number} the measured value. It can be 0 but never `null`.
-* `startDate`: {date} the starting date of the measure. The expected date format is `ISO 8601`. It must be set in relation with the `aggregationPeriod` for this measure: for example, if the `aggregationPeriod` is `day`, then `start_date` must represent the measured day, e.g. `2021-05-01`.
+* `startDate`: {date} the starting date of the measure. The expected date format is `ISO 8601`. It must be set in relation with the `aggregationPeriod` for this measure: for example, if the `aggregationPeriod` is `day`, then `start_date` must represent the measured day, e.g. `2022-01-01`.
 * `createdBy`: {string} the application that produced the measure.
 * `group1`: {object} The first group. Groups are used to combinate measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. Here, the key must match the `group1_key` of the associated measure definition.
 * `group2`: {object} The second group. Its key must match the `group2_key` of the associated measure definition.
@@ -125,12 +124,11 @@ The available aggregates functions are the following:
 You can query the `/aggregate` endpoint to get an aggregated result:
 
 ```
-$ curl -X GET -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/aggregate -d '{"measureName": "connection-count-daily", "startDate": "2021-05-01", "endDate": "2021-05-02"}'
+$ curl -X GET -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/aggregate -d '{"measureName": "connection-count-daily", "startDate": "2022-01-01", "endDate": "2022-01-02"}'
 HTTP/1.0 200 OK
 Content-Type: application/json
 Content-Length: 12
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 14:22:21 GMT
 
 [
   {
@@ -144,7 +142,7 @@ Date: Sun, 30 May 2021 14:22:21 GMT
     "max": 100.0,
     "measureName": "connection-count-daily",
     "min": 0.0,
-    "startDate": "2021-05-01T00:00:00",
+    "startDate": "2022-01-01T00:00:00",
     "std": 28.94,
     "sum": 9410.0
   },
@@ -159,7 +157,7 @@ Date: Sun, 30 May 2021 14:22:21 GMT
     "max": 94.0,
     "measureName": "connection-count-daily",
     "min": 3.0,
-    "startDate": "2021-05-01T00:00:00",
+    "startDate": "2022-01-02T00:00:00",
     "std": 29.33,
     "sum": 1379.0
   }
@@ -275,7 +273,6 @@ HTTP/1.0 200 OK
 Content-Type: application/json
 Content-Length: 63
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 13:22:24 GMT
 
 {
   "db": {
@@ -343,7 +340,9 @@ Raw measures can be purged with the commands:
 -  `flask purge measure <measure_name>`.
 -  `flask purge all-measures`.
 
-A `-d max-date` option can be passed to specify the maximum date for a measure to be purged.
+By default, measures oldest than 90 days will be deleted. 
+A `-d days` option can be passed to specify the minimal age of a measure to be deleted, expressed in number of days, starting from the current date.
+
 
 Note the measures involving quartiles cannot be purged as easily as the others, because quartiles cannot be partitioned: one needs all the measures to compute the quartile. Thus, the `max_days_to_update_quartile` is used to determine if the measures can be removed.
 
