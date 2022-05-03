@@ -4,6 +4,7 @@ from dacc.models import (
     AggregationDate,
     MeasureDefinition,
     RefusedRawMeasure,
+    tuple_as_dict,
 )
 from dacc import db, validate
 from sqlalchemy import func, bindparam, update
@@ -657,44 +658,31 @@ def compute_wildcard_aggregate(
 
     inserted_aggs = []
     for agg in aggs:
-        aggregate = {
-            "start_date": agg.start_date,
-            "created_by": agg.created_by,
-            "sum": agg.sum,
-            "count": agg.count,
-            "count_not_zero": agg.count_not_zero,
-            "min": agg.min,
-            "max": agg.max,
-            "avg": agg.avg,
-            "std": agg.std,
-        }
-        if m_definition.with_quartiles is True:
-            aggregate["median"] = agg.median
-            aggregate["first_quartile"] = agg.first_quartile
-            aggregate["third_quartile"] = agg.third_quartile
+        measure = tuple_as_dict(agg)
 
-        aggregate["group1"] = (
+        # TODO: groups might be dynamics in the future
+        measure["group1"] = (
             generate_wildcard_json(m_definition.group1_key)
             if "group1" in wildcard_groups
             else agg.group1
         )
-        aggregate["group2"] = (
+        measure["group2"] = (
             generate_wildcard_json(m_definition.group2_key)
             if "group2" in wildcard_groups
             else agg.group2
         )
-        aggregate["group3"] = (
+        measure["group3"] = (
             generate_wildcard_json(m_definition.group3_key)
             if "group3" in wildcard_groups
             else agg.group3
         )
         existing_agg = Aggregation.query_aggregate_by_measure(
-            m_definition.name, aggregate
+            m_definition.name, measure
         )
         if existing_agg is not None:
             db.session.delete(existing_agg)
 
-        agg_to_insert = aggregate_to_insert(m_definition, aggregate)
+        agg_to_insert = aggregate_to_insert(m_definition, measure)
         db.session.add(agg_to_insert)
         inserted_aggs.append(agg_to_insert)
     db.session.commit()

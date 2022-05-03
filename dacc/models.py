@@ -5,7 +5,21 @@ from sqlalchemy.sql import func, text
 from sqlalchemy.schema import DropTable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy import inspect
+from sqlalchemy.engine.row import Row
 from datetime import timedelta
+
+
+def tuple_as_dict(obj):
+    if type(obj) == dict:
+        return obj
+    if type(obj) == Row:
+        return obj._asdict()
+    return {
+        # The object is an ORM model
+        c.key: getattr(obj, c.key)
+        for c in inspect(obj).mapper.column_attrs
+    }
 
 
 @compiles(DropTable, "postgresql")
@@ -216,6 +230,7 @@ class Aggregation(db.Model):
 
     @staticmethod
     def query_aggregate_by_measure(measure_name, m):
+        m = tuple_as_dict(m)
         return (
             db.session.query(Aggregation)
             .filter(

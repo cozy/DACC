@@ -71,7 +71,6 @@ def test_purge_measures():
     assert agg_2.last_raw_measures_purged is None
 
     purge_date = datetime.now()
-    print("date : {}".format(purge_date))
 
     # Purge all measures with date
     purge_measures(m_def_1, purge_date)
