@@ -220,11 +220,11 @@ class Aggregation(db.Model):
             db.session.query(Aggregation)
             .filter(
                 Aggregation.measure_name == measure_name,
-                Aggregation.start_date == m.start_date,
-                Aggregation.created_by == m.created_by,
-                Aggregation.group1 == m.group1,
-                Aggregation.group2 == m.group2,
-                Aggregation.group3 == m.group3,
+                Aggregation.start_date == m["start_date"],
+                Aggregation.created_by == m["created_by"],
+                Aggregation.group1 == m["group1"],
+                Aggregation.group2 == m["group2"],
+                Aggregation.group3 == m["group3"],
             )
             .first()
         )

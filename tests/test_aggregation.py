@@ -517,3 +517,63 @@ def test_backup_rejected_raw_measures():
     assert all_refused[2].rejected_date is not None
 
     assert len(aggs) == 0
+
+
+def test_wildcard_aggregation():
+    measure_name = "konnector-event-daily"
+    m_def = MeasureDefinition.query_by_name(measure_name)
+
+    # Isolate group2
+    groups = ["group1", "group3"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 1
+    assert aggs[0].count == 4
+    assert aggs[0].sum == 4
+    assert aggs[0].median == 1
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "*"}
+    assert aggs[0].group2 == {"event_type": "connexion"}
+    assert aggs[0].group3 == {"status": "*"}
+
+    # Isolate group3
+    groups = ["group1", "group2"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 2
+    assert aggs[0].count == 1
+    assert aggs[1].count == 3
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "*"}
+    assert aggs[0].group2 == {"event_type": "*"}
+    assert aggs[0].group3 == {"status": "error"}
+    assert aggs[1].group1 == {"slug": "*"}
+    assert aggs[1].group2 == {"event_type": "*"}
+    assert aggs[1].group3 == {"status": "success"}
+
+    # Isolate group1
+    groups = ["group2", "group3"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 2
+    assert aggs[0].count == 2
+    assert aggs[1].count == 2
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "enedis"}
+    assert aggs[0].group2 == {"event_type": "*"}
+    assert aggs[0].group3 == {"status": "*"}
+    assert aggs[1].group1 == {"slug": "grdf"}
+    assert aggs[1].group2 == {"event_type": "*"}
+    assert aggs[1].group3 == {"status": "*"}

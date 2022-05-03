@@ -3,7 +3,8 @@ import sys
 import os
 import uuid
 import json
-from datetime import datetime, timedelta
+import time
+from datetime import datetime, timedelta, date
 import warnings
 from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
@@ -357,6 +358,31 @@ def compute_all_aggregations(force):
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()
+
+
+@dacc.cli.command("compute-wildcard-aggregate")
+@click.argument("measure_name")
+@click.argument("groups")
+@click.option(
+    "--from-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=time.strftime("%Y-%m-%d", time.localtime(0)),
+)
+@click.option(
+    "--to-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(date.today()),
+)
+def compute_wildcard_aggregate(measure_name, from_date, groups, to_date):
+    """Compute wildcard aggregates.
+
+    The groups must be separated by a comma, e.g. "group1,group2"
+    """
+    m_def = MeasureDefinition.query_by_name(measure_name)
+    groups_array = groups.split(",")
+    aggregation.compute_wildcard_aggregate(
+        m_def, groups_array, from_date, to_date
+    )
 
 
 @dacc.cli.group()

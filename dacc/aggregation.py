@@ -303,26 +303,29 @@ def compute_partial_aggregates(
 
 
 def aggregate_to_insert(m_definition: MeasureDefinition, agg: Aggregation):
+    if type(agg) is not dict:
+        agg = agg._mapping
+
     new_agg = Aggregation(
         measure_name=m_definition.name,
-        start_date=agg.start_date,
-        created_by=agg.created_by,
-        group1=agg.group1,
-        group2=agg.group2,
-        group3=agg.group3,
-        sum=agg.sum,
-        count=agg.count,
-        count_not_zero=agg.count_not_zero,
-        min=agg.min,
-        max=agg.max,
-        avg=agg.avg,
-        std=agg.std,
+        start_date=agg["start_date"],
+        created_by=agg["created_by"],
+        group1=agg["group1"],
+        group2=agg["group2"],
+        group3=agg["group3"],
+        sum=agg["sum"],
+        count=agg["count"],
+        count_not_zero=agg["count_not_zero"],
+        min=agg["min"],
+        max=agg["max"],
+        avg=agg["avg"],
+        std=agg["std"],
     )
-    if m_definition.with_quartiles:
+    if m_definition.with_quartiles is True:
         # Save quartiles only when explicitly declared
-        new_agg.median = agg.median
-        new_agg.first_quartile = agg.first_quartile
-        new_agg.third_quartile = agg.third_quartile
+        new_agg.median = agg["median"]
+        new_agg.first_quartile = agg["first_quartile"]
+        new_agg.third_quartile = agg["third_quartile"]
     return new_agg
 
 
@@ -583,3 +586,117 @@ def aggregate_raw_measures(m_definition: MeasureDefinition, force=False):
 
     except Exception as err:
         print("Error while aggregating: " + repr(err))
+
+
+def generate_wildcard_json(group_key):
+    return {group_key: "*"}
+
+
+def compute_wildcard_aggregate(
+    m_definition: MeasureDefinition,
+    wildcard_groups: List[str],
+    from_date: datetime,
+    to_date: datetime,
+):
+    """Compute wildcard aggregates for the given groups
+
+    A wildcard aggregate is useful to exclude a group in the groupby aggregate.
+    For instance, consider a measure definition with group1_key: 'slug':
+    a wildcard on group1 will aggregate together all the measures with any
+    slug value.
+
+
+    Args:
+        m_definition (MeasureDefinition): The measure definition
+        wildcard_groups (List[str]): The list of groups to wildcard
+        from_date (datetime): The starting date to query measures
+        to_date (datetime): The ending date to query measures
+
+    Returns:
+        list(Aggregation): The inserted wildcard aggregates
+    """
+
+    # TODO: groups might be dynamics in the future
+    not_wildcard_groups = ["group1", "group2", "group3"]
+    for group in wildcard_groups:
+        not_wildcard_groups.remove(group)
+
+    query_args = [
+        RawMeasure.created_by,
+        RawMeasure.start_date,
+    ]
+    groupby_args = [RawMeasure.created_by, RawMeasure.start_date]
+
+    # TODO: could be improved by mapping column name
+    for group in not_wildcard_groups:
+        if group == "group1":
+            query_args.append(RawMeasure.group1)
+            groupby_args.append(RawMeasure.group1)
+        if group == "group2":
+            query_args.append(RawMeasure.group2)
+            groupby_args.append(RawMeasure.group2)
+        if group == "group3":
+            query_args.append(RawMeasure.group3)
+            groupby_args.append(RawMeasure.group3)
+
+    query_args += get_distributive_funcs_aggregation_query()
+    query_args += get_algebraic_funcs_aggregation_query()
+    if m_definition.with_quartiles is True:
+        query_args += get_quartiles_funcs_aggregation_query()
+
+    filters_args = get_filters_all_aggregations(
+        m_definition, from_date, to_date
+    )
+
+    aggs = (
+        db.session.query(*query_args)
+        .filter(*filters_args)
+        .group_by(*groupby_args)
+        .all()
+    )
+
+    inserted_aggs = []
+    for agg in aggs:
+        aggregate = {
+            "start_date": agg.start_date,
+            "created_by": agg.created_by,
+            "sum": agg.sum,
+            "count": agg.count,
+            "count_not_zero": agg.count_not_zero,
+            "min": agg.min,
+            "max": agg.max,
+            "avg": agg.avg,
+            "std": agg.std,
+        }
+        if m_definition.with_quartiles is True:
+            aggregate["median"] = agg.median
+            aggregate["first_quartile"] = agg.first_quartile
+            aggregate["third_quartile"] = agg.third_quartile
+
+        aggregate["group1"] = (
+            generate_wildcard_json(m_definition.group1_key)
+            if "group1" in wildcard_groups
+            else agg.group1
+        )
+        aggregate["group2"] = (
+            generate_wildcard_json(m_definition.group2_key)
+            if "group2" in wildcard_groups
+            else agg.group2
+        )
+        aggregate["group3"] = (
+            generate_wildcard_json(m_definition.group3_key)
+            if "group3" in wildcard_groups
+            else agg.group3
+        )
+        existing_agg = Aggregation.query_aggregate_by_measure(
+            m_definition.name, aggregate
+        )
+        if existing_agg is not None:
+            db.session.delete(existing_agg)
+
+        agg_to_insert = aggregate_to_insert(m_definition, aggregate)
+        db.session.add(agg_to_insert)
+        inserted_aggs.append(agg_to_insert)
+    db.session.commit()
+
+    return inserted_aggs
