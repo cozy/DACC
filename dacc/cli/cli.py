@@ -380,9 +380,15 @@ def compute_wildcard_aggregate(measure_name, from_date, groups, to_date):
     """
     m_def = MeasureDefinition.query_by_name(measure_name)
     groups_array = groups.split(",")
-    aggregation.compute_wildcard_aggregate(
+    aggs = aggregation.compute_wildcard_aggregate(
         m_def, groups_array, from_date, to_date
     )
+    if len(aggs) == 0:
+        print("No wildcard aggregate generated")
+    else:
+        for agg in aggs:
+            print("Wildcard aggregate generated on {}".format(agg.start_date))
+        print("{} wildcard aggregates generated".format(len(aggs)))
 
 
 @dacc.cli.group()
