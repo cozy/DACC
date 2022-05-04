@@ -348,6 +348,22 @@ Note the measures involving quartiles cannot be purged as easily as the others, 
 
 When measures are purged, the impacted aggregate are updated to save the purge date in the `last_raw_measures_purged` column.
 
+## Wildcard aggregates
+
+It is possible to manually generate wildcard aggregates:
+
+`flask compute-wildcard-aggregate <measure_name> <group1,group2> --from-date 2021-01-01 --to-date 2022-01-01`
+
+A wildcard aggregate will consider all the measures for any group value, if the group is specified.
+
+For instance, let us consider an `electric-consumption` measure with `group1_key: heating_type` and `group2_key: surface`. If you want to aggreagte all the measures for any surface, you can run: 
+
+`flask compute-wildcard-aggregate electric-consumption group2`
+
+This will produce aggregates with `group2: *` for each heating type.
+
+ℹ️ You can specify a date range with `--from-date` and `--to-date` to restrict the measures based on the `RawMeasure.last_updated` column. The default values are respectively `1970-01-01` and the current date.
+
 ## Logging
 
 Simply enable the functionality in your config file and define minimum message criticity (in syslog's meaning) you want to be sent to syslog:
