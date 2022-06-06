@@ -1,4 +1,10 @@
-from dacc.models import Aggregation
+from dacc.models import Aggregation, tuple_as_dict
+from dacc.utils import to_camel_case
+from dacc.consts import AUTHORIZED_COLUMNS_FOR_RESTITUTION
+
+
+def is_authorized_column(column_name):
+    return column_name in AUTHORIZED_COLUMNS_FOR_RESTITUTION
 
 
 def get_aggregated_results(params):
@@ -25,24 +31,12 @@ def get_aggregated_results(params):
     results = []
     for agg in aggs:
         # Use camelCase for JSON API
+        columns_dict = tuple_as_dict(agg)
         res = {}
-        res["measureName"] = agg.measure_name
-        res["startDate"] = agg.start_date
-        res["createdBy"] = agg.created_by
-        if agg.group1:
-            res["group1"] = agg.group1
-        if agg.group2:
-            res["group2"] = agg.group2
-        if agg.group3:
-            res["group3"] = agg.group3
-        res["sum"] = agg.sum
-        res["count"] = agg.count
-        res["countNotZero"] = agg.count_not_zero
-        res["min"] = agg.min
-        res["max"] = agg.max
-        res["avg"] = agg.avg
-        res["std"] = agg.std
+        for key in columns_dict.keys():
+            if columns_dict[key] is not None and is_authorized_column(key):
+                camel_key = to_camel_case(key)
+                res[camel_key] = columns_dict[key]
 
         results.append(res)
-
     return results

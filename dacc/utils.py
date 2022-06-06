@@ -39,3 +39,16 @@ def is_dates_interval_higher(
 
     diff = (end_date - start_date).days / consts.TIME_PERIOD[period]
     return diff >= 1
+
+
+def to_camel_case(snake_str: str):
+    """Convert a snake_case string to a camelCase
+
+    Args:
+        snake_str (str): the snake string
+
+    Returns:
+        str: the camel string
+    """
+    tokens = snake_str.split("_")
+    return tokens[0] + "".join(x.title() for x in tokens[1:])

@@ -4,12 +4,12 @@ from tests.fixtures import fixtures
 from dateutil.parser import parse
 
 
-def insert_dummy(n_measures, n_days, date, created_by="ecolyo"):
+def insert_dummy(n_measures, n_days, measure_name, date, created_by="ecolyo"):
     fixtures.insert_random_raw_measures(
         n_measures,
         n_days,
         date,
-        "dummy-restitute",
+        measure_name,
         created_by,
         group1={"key1": 1},
         group2={"key2": 2},
@@ -18,8 +18,9 @@ def insert_dummy(n_measures, n_days, date, created_by="ecolyo"):
 
 
 def test_restitute_aggregated_results():
+    measure_name = "dummy-restitute"
     m_def = MeasureDefinition(
-        name="dummy-restitute",
+        name=measure_name,
         aggregation_threshold=5,
         group1_key="key1",
         group2_key="key2",
@@ -27,11 +28,11 @@ def test_restitute_aggregated_results():
     )
     db.session.add(m_def)
 
-    insert_dummy(10, 1, "2021-05-01")
+    insert_dummy(10, 1, measure_name, "2021-05-01")
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     p = {
-        "measureName": "dummy-restitute",
+        "measureName": measure_name,
         "startDate": "2021-05-01",
         "endDate": "2021-06-01",
     }
@@ -40,7 +41,7 @@ def test_restitute_aggregated_results():
     assert len(res) == 1
     assert res[0]["startDate"] == parse("2021-05-01")
     assert res[0]["count"] == 10
-    assert res[0]["measureName"] == "dummy-restitute"
+    assert res[0]["measureName"] == measure_name
     assert res[0]["createdBy"] == "ecolyo"
     assert "sum" in res[0]
     assert "countNotZero" in res[0]
@@ -48,9 +49,14 @@ def test_restitute_aggregated_results():
     assert "max" in res[0]
     assert "avg" in res[0]
     assert "std" in res[0]
+    assert "median" not in res[0]
+    assert "firstQuartile" not in res[0]
+    assert "thirdQuartile" not in res[0]
+    assert "lastUpdated" not in res[0]
+    assert "lastRawMeasuresPurged" not in res[0]
 
     # Not enough contributions to get results
-    insert_dummy(4, 1, "2021-05-02")
+    insert_dummy(4, 1, measure_name, "2021-05-02")
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     res = restitution.get_aggregated_results(p)
@@ -58,7 +64,7 @@ def test_restitute_aggregated_results():
     assert res[0]["startDate"] == parse("2021-05-01")
 
     # Add enough contributions to get results
-    insert_dummy(1, 1, "2021-05-02")
+    insert_dummy(1, 1, measure_name, "2021-05-02")
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     res = restitution.get_aggregated_results(p)
@@ -67,16 +73,16 @@ def test_restitute_aggregated_results():
     assert res[1]["count"] == 5
 
     # Add measures before and after date range
-    insert_dummy(10, 1, "2021-04-30")
-    insert_dummy(10, 1, "2021-06-01")
+    insert_dummy(10, 1, measure_name, "2021-04-30")
+    insert_dummy(10, 1, measure_name, "2021-06-01")
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     res = restitution.get_aggregated_results(p)
     assert len(res) == 2
 
     # Add measures on the boundaries of date range
-    insert_dummy(10, 1, "2021-05-01T00:00:00")
-    insert_dummy(10, 1, "2021-05-30T23:59:59")
+    insert_dummy(10, 1, measure_name, "2021-05-01T00:00:00")
+    insert_dummy(10, 1, measure_name, "2021-05-30T23:59:59")
     aggregation.aggregate_raw_measures(m_def, force=True)
 
     res = restitution.get_aggregated_results(p)
@@ -86,7 +92,7 @@ def test_restitute_aggregated_results():
     assert res[2]["count"] == 10
 
     # Filter on specific app
-    insert_dummy(10, 1, "2021-05-01", created_by="ecolyoyo")
+    insert_dummy(10, 1, measure_name, "2021-05-01", created_by="ecolyoyo")
     aggregation.aggregate_raw_measures(m_def, force=True)
     p = {
         "measureName": "dummy-restitute",
@@ -97,3 +103,41 @@ def test_restitute_aggregated_results():
     res = restitution.get_aggregated_results(p)
     assert len(res) == 1
     assert res[0]["count"] == 10
+
+
+def test_restitute_quartiles():
+    measure_name = "dummy-restitute-with-quartiles"
+    m_def = MeasureDefinition(
+        name=measure_name,
+        aggregation_threshold=5,
+        group1_key="key1",
+        group2_key="key2",
+        group3_key="key3",
+        with_quartiles=True,
+    )
+    db.session.add(m_def)
+
+    insert_dummy(10, 1, measure_name, "2021-05-01")
+    aggregation.aggregate_raw_measures(m_def, force=True)
+
+    p = {
+        "measureName": measure_name,
+        "startDate": "2021-05-01",
+        "endDate": "2021-06-01",
+    }
+
+    res = restitution.get_aggregated_results(p)
+    assert len(res) == 1
+    assert res[0]["startDate"] == parse("2021-05-01")
+    assert res[0]["count"] == 10
+    assert res[0]["measureName"] == measure_name
+    assert res[0]["createdBy"] == "ecolyo"
+    assert "sum" in res[0]
+    assert "countNotZero" in res[0]
+    assert "min" in res[0]
+    assert "max" in res[0]
+    assert "avg" in res[0]
+    assert "std" in res[0]
+    assert "median" in res[0]
+    assert "firstQuartile" in res[0]
+    assert "thirdQuartile" in res[0]
