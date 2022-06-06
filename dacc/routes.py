@@ -52,7 +52,7 @@ def add_raw_measure():
         return handle_error(err, 500)
 
 
-@dacc.route("/aggregate", methods=["GET"])
+@dacc.route("/aggregate", methods=["GET", "POST"])
 @auth.login_required
 def get_aggregated_results():
     """Get aggregated results
