@@ -1,0 +1,17 @@
+{
+  "definitions": [
+    {
+      "id": 1,
+      "name": "average-operation-amount",
+      "org": "myorg",
+      "accessApp": false,
+      "accessPublic": false,
+      "aggregationThreshold": 50,
+      "createdBy": "mybankapp",
+      "executionFrequency": "month",
+      "aggregationPeriod": "month",
+      "group1Key": "category",
+      "description": "Average value of banking operations, grouped by category"
+    }
+  ]
+}

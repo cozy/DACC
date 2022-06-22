@@ -53,10 +53,10 @@ def generate_random_raw_measures(
     n_days,
     starting_day,
     measure_name,
-    created_by,
-    group1,
-    group2,
-    group3,
+    created_by=None,
+    group1=None,
+    group2=None,
+    group3=None,
 ):
     try:
         measures = []

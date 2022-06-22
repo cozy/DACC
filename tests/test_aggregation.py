@@ -1,11 +1,13 @@
 import pytest
-from dacc import db, aggregation
+from dacc import db, aggregation, purge
 from dacc.models import (
     RawMeasure,
     AggregationDate,
     Aggregation,
     MeasureDefinition,
+    RefusedRawMeasure,
 )
+
 import pandas as pd
 from sqlalchemy import distinct
 import numpy as np
@@ -29,18 +31,20 @@ def convert_columns(df_raw):
 
 
 def test_aggregations():
-    measure_names = query_all_measures_name()
-    for measure_name in measure_names:
-        aggregated_rows = aggregation.aggregate_measures_from_db(
-            measure_name, None, None
+    m_definitions = db.session.query(MeasureDefinition).all()
+    for m_def in m_definitions:
+        aggregated_rows = aggregation.compute_all_aggregates_from_raw_measures(
+            m_def, None, None
         )
+        if len(aggregated_rows) == 0:
+            continue
 
-        raw_measures = RawMeasure.query_by_name(measure_name)
-
+        raw_measures = RawMeasure.query_by_name(m_def.name)
         df_raw = pd.DataFrame(
             data=raw_measures,
             columns=[
                 "created_by",
+                "last_updated",
                 "start_date",
                 "group1",
                 "group2",
@@ -48,13 +52,14 @@ def test_aggregations():
                 "value",
             ],
         )
-
         #  Remove null columns
         columns = df_raw.columns[df_raw.notna().any()].tolist()
         df_raw = df_raw.dropna(axis="columns")
 
         df_raw = convert_columns(df_raw)
-        columns.remove("value")  #  Remove value column to group by
+        # Remove columns to group by
+        columns.remove("value")
+        columns.remove("last_updated")
 
         sums = df_raw.groupby(columns, as_index=False).sum()
         counts = df_raw.groupby(columns, as_index=False).count()
@@ -63,6 +68,13 @@ def test_aggregations():
         avgs = df_raw.groupby(columns, as_index=False).mean()
         stds = df_raw.groupby(columns, as_index=False).std()
         stds = stds.fillna(0)
+        medians = df_raw.groupby(columns, as_index=False).quantile(0.5)
+        first_quartiles = df_raw.groupby(columns, as_index=False).quantile(
+            0.25
+        )
+        third_quartiles = df_raw.groupby(columns, as_index=False).quantile(
+            0.75
+        )
 
         assert len(aggregated_rows) == len(sums)
         for i, _ in enumerate(aggregated_rows):
@@ -76,10 +88,61 @@ def test_aggregations():
             assert round(float(aggregated_rows[i].std), 2) == round(
                 stds.value[i], 2
             )
+            assert aggregated_rows[i].median == medians.value[i]
+            assert (
+                aggregated_rows[i].first_quartile == first_quartiles.value[i]
+            )
+            assert (
+                aggregated_rows[i].third_quartile == third_quartiles.value[i]
+            )
+
+
+def test_quartiles_aggregation_simple():
+    measure_name = "dummy-quartiles"
+    m_def = MeasureDefinition(name=measure_name, with_quartiles=True)
+    measures = [
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-01T00:00:01",
+            value=0,
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-02",
+            value=20,
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-02",
+            value=40,
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-05-01",
+            last_updated="2021-05-02",
+            value=60,
+        ),
+    ]
+    for m in measures:
+        db.session.add(m)
+
+    start_date = "2021-05-01T00:00:01"
+    end_date = "2021-05-03T00:00:00"
+    agg = aggregation.compute_all_aggregates_from_raw_measures(
+        m_def, start_date, end_date
+    )
+
+    assert agg[0].median == 40.00
+    assert agg[0].first_quartile == 30.00
+    assert agg[0].third_quartile == 50.00
 
 
 def test_aggregate_dates():
-    measure_name = "dummy"
+    measure_name = "dummy-dates"
+    m_def = MeasureDefinition(name=measure_name)
     measures = [
         RawMeasure(
             measure_name=measure_name,
@@ -104,8 +167,8 @@ def test_aggregate_dates():
         db.session.add(m)
     start_date = "2021-05-01T00:00:01"
     end_date = "2021-05-03T00:00:00"
-    agg = aggregation.aggregate_measures_from_db(
-        measure_name, start_date, end_date
+    agg = aggregation.compute_all_aggregates_from_raw_measures(
+        m_def, start_date, end_date
     )
     assert len(agg) == 1
     # The first measure is filtered out because of the start date
@@ -118,8 +181,8 @@ def test_aggregate_dates():
         value=42,
     )
     db.session.add(m)
-    agg = aggregation.aggregate_measures_from_db(
-        measure_name, start_date, end_date
+    agg = aggregation.compute_all_aggregates_from_raw_measures(
+        m_def, start_date, end_date
     )
     assert len(agg) == 1
     # The last measure is filtered out because of the last date
@@ -127,8 +190,8 @@ def test_aggregate_dates():
 
     start_date = "2021-05-01T00:00:00"
     end_date = "2021-05-03T00:00:01"
-    agg = aggregation.aggregate_measures_from_db(
-        measure_name, start_date, end_date
+    agg = aggregation.compute_all_aggregates_from_raw_measures(
+        m_def, start_date, end_date
     )
     assert len(agg) == 1
     # All measures are included
@@ -297,3 +360,220 @@ def test_aggregation_execution():
     assert len(agg) == 2
     assert agg[0].start_date == datetime(2021, 5, 2)
     assert agg[1].start_date == datetime(2021, 5, 3)
+
+
+def get_raw_values_as_dataframes(start_date):
+    raw_values_food = (
+        db.session.query(RawMeasure.value)
+        .filter(
+            RawMeasure.start_date == start_date,
+            RawMeasure.group1 == {"category": "food"},
+        )
+        .all()
+    )
+    raw_values_hobby = (
+        db.session.query(RawMeasure.value)
+        .filter(
+            RawMeasure.start_date == start_date,
+            RawMeasure.group1 == {"category": "hobby"},
+        )
+        .all()
+    )
+    df_food = pd.DataFrame(data=raw_values_food, columns=["value"])
+    df_food = convert_columns(df_food)
+    df_hobby = pd.DataFrame(data=raw_values_hobby, columns=["value"])
+    df_hobby = convert_columns(df_hobby)
+    return df_food, df_hobby
+
+
+def test_incremental_aggregation_quartiles():
+    measure_name = "average-operation-amount"
+    m_def = MeasureDefinition.query_by_name(measure_name)
+
+    df_food, df_hobby = get_raw_values_as_dataframes("2021-06-01")
+
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+
+    assert len(agg) == 2
+    assert agg[0].group1 == {"category": "food"}
+    assert agg[0].median == df_food["value"].quantile(0.5)
+    assert agg[0].first_quartile == df_food["value"].quantile(0.25)
+    assert agg[0].third_quartile == df_food["value"].quantile(0.75)
+
+    assert agg[1].group1 == {"category": "hobby"}
+    assert agg[1].median == df_hobby["value"].quantile(0.5)
+    assert agg[1].first_quartile == df_hobby["value"].quantile(0.25)
+    assert agg[1].third_quartile == df_hobby["value"].quantile(0.75)
+
+    # Second aggregation, with existing and new values
+    # It entirely recomputes the quartiles values base on raw measures
+    measures = [
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            last_updated="2021-06-04T00:00:00.003Z",
+            value=12,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            last_updated="2021-06-04T00:00:00.003Z",
+            value=23,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            last_updated="2021-06-04T00:00:00.003Z",
+            value=40,
+            group1={"category": "hobby"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            last_updated="2021-06-04T00:00:00.003Z",
+            value=60,
+            group1={"category": "hobby"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-02",
+            last_updated="2021-06-04T00:00:00.004Z",
+            value=17,
+            group1={"category": "food"},
+        ),
+    ]
+    for m in measures:
+        db.session.add(m)
+
+    df_food, df_hobby = get_raw_values_as_dataframes("2021-06-01")
+
+    agg, date = aggregation.aggregate_raw_measures(m_def)
+    assert len(agg) == 3
+    assert agg[0].group1 == {"category": "food"}
+    assert agg[0].median == df_food["value"].quantile(0.5)
+    assert agg[0].first_quartile == df_food["value"].quantile(0.25)
+    assert agg[0].third_quartile == df_food["value"].quantile(0.75)
+
+    assert agg[1].group1 == {"category": "hobby"}
+    assert agg[1].median == df_hobby["value"].quantile(0.5)
+    assert agg[1].first_quartile == df_hobby["value"].quantile(0.25)
+    assert agg[1].third_quartile == df_hobby["value"].quantile(0.75)
+
+    assert agg[2].group1 == {"category": "food"}
+    assert agg[2].median == 17
+    assert agg[2].first_quartile == 17
+    assert agg[2].third_quartile == 17
+
+
+def test_backup_rejected_raw_measures():
+    measure_name = "average-operation-amount"
+    m_def = MeasureDefinition.query_by_name(measure_name)
+
+    all_refused = db.session.query(RefusedRawMeasure).all()
+    assert len(all_refused) == 0
+
+    raw_measures = RawMeasure.query_by_name(measure_name)
+    assert len(raw_measures) > 0
+
+    purge.purge_measures(m_def)
+
+    raw_measures = RawMeasure.query_by_name(measure_name)
+    assert len(raw_measures) == 0
+
+    measures = [
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=12,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=23,
+            group1={"category": "food"},
+        ),
+        RawMeasure(
+            measure_name=measure_name,
+            start_date="2021-06-01",
+            value=40,
+            group1={"category": "hobby"},
+        ),
+    ]
+    for m in measures:
+        db.session.add(m)
+
+    aggs, date = aggregation.aggregate_raw_measures(m_def)
+
+    all_refused = db.session.query(RefusedRawMeasure).all()
+    assert len(all_refused) == 3
+    assert all_refused[0].value == 23
+    assert all_refused[0].rejected_date is not None
+    assert all_refused[1].value == 12
+    assert all_refused[1].rejected_date is not None
+    assert all_refused[2].value == 40
+    assert all_refused[2].rejected_date is not None
+
+    assert len(aggs) == 0
+
+
+def test_wildcard_aggregation():
+    measure_name = "konnector-event-daily"
+    m_def = MeasureDefinition.query_by_name(measure_name)
+
+    # Isolate group2
+    groups = ["group1", "group3"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 1
+    assert aggs[0].count == 4
+    assert aggs[0].sum == 4
+    assert aggs[0].median == 1
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "*"}
+    assert aggs[0].group2 == {"event_type": "connexion"}
+    assert aggs[0].group3 == {"status": "*"}
+
+    # Isolate group3
+    groups = ["group1", "group2"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 2
+    assert aggs[0].count == 1
+    assert aggs[1].count == 3
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "*"}
+    assert aggs[0].group2 == {"event_type": "*"}
+    assert aggs[0].group3 == {"status": "error"}
+    assert aggs[1].group1 == {"slug": "*"}
+    assert aggs[1].group2 == {"event_type": "*"}
+    assert aggs[1].group3 == {"status": "success"}
+
+    # Isolate group1
+    groups = ["group2", "group3"]
+    start_date = datetime.min
+    end_date = datetime(2021, 5, 4, 0, 0, 0)
+
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups, start_date, end_date
+    )
+    assert len(aggs) == 2
+    assert aggs[0].count == 2
+    assert aggs[1].count == 2
+    assert aggs[0].start_date == datetime(2021, 5, 1, 0)
+    assert aggs[0].group1 == {"slug": "enedis"}
+    assert aggs[0].group2 == {"event_type": "*"}
+    assert aggs[0].group3 == {"status": "*"}
+    assert aggs[1].group1 == {"slug": "grdf"}
+    assert aggs[1].group2 == {"event_type": "*"}
+    assert aggs[1].group3 == {"status": "*"}

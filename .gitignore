@@ -200,3 +200,7 @@ config.yml
 
 # Docker volumes
 volumes/
+
+# measurements definitions
+dacc/assets/*.json
+!dacc/assets/definitions-example.json

@@ -3,13 +3,29 @@ import sys
 import os
 import uuid
 import json
+import time
+from datetime import datetime, timedelta, date
+import warnings
 from dacc import dacc, db, aggregation, consts, insertion
 from tests.fixtures import fixtures
-from dacc.models import MeasureDefinition, FilteredAggregation, Auth
-from sqlalchemy import exc
+from dacc.models import (
+    MeasureDefinition,
+    Auth,
+    Aggregation,
+    AggregationDate,
+)
+from dacc.views import FilteredAggregation
+from dacc.purge import purge_measures
 import requests
 from urllib.parse import urljoin
 from tabulate import tabulate
+
+# See https://github.com/scrapinghub/dateparser/issues/1013
+warnings.filterwarnings(
+    "ignore",
+    message="The localize method is no longer necessary, as this time zone"
+    + " supports the fold attribute",
+)
 
 
 def abort_if_false(ctx, param, value):
@@ -17,7 +33,13 @@ def abort_if_false(ctx, param, value):
         ctx.abort()
 
 
-@dacc.cli.command("reset-all-tables")
+@dacc.cli.group()
+def table():
+    """SQL tables commands."""
+    pass
+
+
+@table.command("reset-all")
 @click.option(
     "--yes",
     is_flag=True,
@@ -40,7 +62,7 @@ def reset_tables():
         raise click.Abort()
 
 
-@dacc.cli.command("create-all-tables")
+@table.command("create-all")
 def create_tables():
     """Create all tables in database"""
     try:
@@ -51,7 +73,7 @@ def create_tables():
         raise click.Abort()
 
 
-@dacc.cli.command("reset-table")
+@table.command("reset")
 @click.argument("table_name")
 def reset_table(table_name):
     """Reset a table in database"""
@@ -69,7 +91,7 @@ def reset_table(table_name):
         raise click.Abort()
 
 
-@dacc.cli.command("show-table")
+@table.command("show")
 @click.argument("table_name")
 def show_table(table_name):
     """Show a table content"""
@@ -92,9 +114,97 @@ def show_table(table_name):
         raise click.Abort()
 
 
+@dacc.cli.group()
+def purge():
+    """Purge commands."""
+    pass
+
+
+@purge.command("measure")
+@click.argument("measure_name")
+@click.option("-d", "--days", default=90, show_default="90 days")
+def purge_measure(measure_name, days):
+    "Purge measures older than the given days"
+    try:
+        m_def = MeasureDefinition.query_by_name(measure_name)
+        purge_date = datetime.today() - timedelta(days=days)
+        print(
+            "Purge measures older than: {}".format(
+                purge_date.strftime("%Y-%m-%d")
+            )
+        )
+        purge_measures(m_def, purge_date)
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@purge.command("all-measures")
+@click.option("-d", "--days", default=90, show_default="90 days")
+def purge_all_measures(days):
+    "Purge all measures older than the given days"
+    try:
+        m_defs = db.session.query(MeasureDefinition).all()
+        for m_def in m_defs:
+            purge_date = datetime.today() - timedelta(days=days)
+            print(
+                "Purge measures older than: {}".format(
+                    purge_date.strftime("%Y-%m-%d")
+                )
+            )
+            purge_measures(m_def, purge_date)
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@dacc.cli.command("delete-aggregations-from-date")
+@click.argument("measure_name")
+@click.argument("start_date")
+@click.option(
+    "--yes",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="This will remove aggregations in database, are you sure?",
+)
+def delete_aggregation(measure_name, start_date):
+    """Delete all the aggregations computed for a measure, starting from
+    the given date and set the last_aggregation_date to this date.
+    WARNING: this should be used care, as manually setting
+    last_aggregation_date might have side-effect if new measures with old
+    start_date are implied.
+    """
+    try:
+        aggs = Aggregation.query_aggregates_by_measure_name_from_date(
+            measure_name, start_date
+        )
+        for agg in aggs:
+            db.session.delete(agg)
+
+        m_def_id = MeasureDefinition.query_by_name(measure_name).id
+        db.session.query(AggregationDate).filter(
+            AggregationDate.measure_definition_id == m_def_id
+        ).update({"last_aggregated_measure_date": start_date})
+        print("{} deleted aggregates".format(len(aggs)))
+        print(
+            "AggregationDate for {} (id {}) updated to date: {}".format(
+                measure_name, m_def_id, start_date
+            )
+        )
+        db.session.commit()
+
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
 @dacc.cli.command("insert-definitions-json")
 @click.option(
-    "-f", "file_path", default="assets/definitions.json", show_default=True
+    "-f",
+    "--file_path",
+    default="assets/definitions.json",
+    show_default=True,
 )
 def insert_measure_definition_json(file_path):
     """Insert measure definitions from file"""
@@ -120,6 +230,7 @@ def insert_measure_definition_json(file_path):
                 )
                 db_def.access_app = m_def.get("accessApp")
                 db_def.access_public = m_def.get("accessPublic")
+                db_def.with_quartiles = m_def.get("withQuartiles")
             else:
                 insertion.insert_measure_definition(m_def)
                 print("New definition inserted: {}".format(m_def.get("name")))
@@ -131,7 +242,13 @@ def insert_measure_definition_json(file_path):
         raise click.Abort()
 
 
-@dacc.cli.command("insert-fixtures-from-file")
+@dacc.cli.group()
+def measures():
+    """Measures commands."""
+    pass
+
+
+@measures.command("insert-fixtures-from-file")
 @click.argument("fixture_type")
 def insert_fixtures_definition(fixture_type):
     """Insert fixture file in database"""
@@ -145,8 +262,8 @@ def insert_fixtures_definition(fixture_type):
     db.session.commit()
 
 
-@dacc.cli.command("insert-random-measures")
-@click.option("-n", "n_measures", default=1, show_default=True)
+@measures.command("insert-random-measures")
+@click.option("-n", "--n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
 @click.option(
     "--starting-day", "starting_day", default="2021-05-01", show_default=True
@@ -160,9 +277,9 @@ def insert_fixtures(n_measures, days, starting_day, measure_name):
     )
 
 
-@dacc.cli.command("send-random-measures")
+@measures.command("send-random-measures")
 @click.argument("dacc_address")
-@click.option("-n", "n_measures", default=1, show_default=True)
+@click.option("-n", "--n_measures", default=1, show_default=True)
 @click.option("-d", "--days", default=1, show_default=True)
 @click.option(
     "--starting-day", "starting_day", default="2021-05-01", show_default=True
@@ -243,7 +360,44 @@ def compute_all_aggregations(force):
         raise click.Abort()
 
 
-@dacc.cli.command("create-filtered-aggregation-view")
+@dacc.cli.command("compute-wildcard-aggregate")
+@click.argument("measure_name")
+@click.argument("groups")
+@click.option(
+    "--from-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=time.strftime("%Y-%m-%d", time.localtime(0)),
+)
+@click.option(
+    "--to-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(date.today()),
+)
+def compute_wildcard_aggregate(measure_name, from_date, groups, to_date):
+    """Compute wildcard aggregates.
+
+    The groups must be separated by a comma, e.g. "group1,group2"
+    """
+    m_def = MeasureDefinition.query_by_name(measure_name)
+    groups_array = groups.split(",")
+    aggs = aggregation.compute_wildcard_aggregate(
+        m_def, groups_array, from_date, to_date
+    )
+    if len(aggs) == 0:
+        print("No wildcard aggregate generated")
+    else:
+        for agg in aggs:
+            print("Wildcard aggregate generated on {}".format(agg.start_date))
+        print("{} wildcard aggregates generated".format(len(aggs)))
+
+
+@dacc.cli.group()
+def view():
+    """View commands."""
+    pass
+
+
+@view.command("create-filtered-aggregation")
 def create_filtered_aggregation_view():
     """Create the filtered aggregation view"""
     try:
@@ -253,11 +407,31 @@ def create_filtered_aggregation_view():
         raise click.Abort()
 
 
-@dacc.cli.command("update-filtered-aggregation-view")
+@view.command("update-filtered-aggregation")
 def refresh_filtered_aggregation_view():
     """Refresh the filtered aggregation view"""
     try:
         FilteredAggregation.udpate()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@view.command("delete-filtered-aggregation")
+def delete_filtered_aggregation_view():
+    """Delete the filtered aggregation view"""
+    try:
+        FilteredAggregation.delete()
+    except Exception as err:
+        print("Command failed: {}".format(repr(err)))
+        raise click.Abort()
+
+
+@view.command("recreate-filtered-aggregation")
+def recreate_filtered_aggregation_view():
+    """Recreate safely the filtered aggregation view"""
+    try:
+        FilteredAggregation.recreate_view()
     except Exception as err:
         print("Command failed: {}".format(repr(err)))
         raise click.Abort()

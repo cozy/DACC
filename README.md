@@ -30,7 +30,7 @@ source venv/bin/activate
 flask run
 ```
 
-# API 
+# API
 ## Add a measure
 
 You can request the `/measure` endpoint to add a raw measure:
@@ -41,7 +41,6 @@ HTTP/1.0 201 CREATED
 Content-Type: application/json
 Content-Length: 12
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 13:22:24 GMT
 
 {
   "ok": "true"
@@ -49,20 +48,20 @@ Date: Sun, 30 May 2021 13:22:24 GMT
 
 ```
 
-ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by the actual URL, e.g. `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests. 
+ℹ️ If you want to request an actual server, replace `http://localhost:5000/measure` by your DACC URL. For example, `https://dacc.cozycloud.cc/measure`, or `https://dacc-dev.cozycloud.cc/measure` for tests.
 
 
-ℹ️ The `token` is automatically injected by the stack when using a  remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
+ℹ️ The `token` is automatically injected by the stack when using a remote-doctype. Here is the [remote-doctype](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc) that must be used to request the Cozy's DACC server. You can also use the one [for developement](https://github.com/cozy/cozy-doctypes/tree/master/cc.cozycloud.dacc-dev).
 To know how to use a remote-doctype from a Cozy app, see the [stack documentation](https://docs.cozy.io/en/cozy-stack/remote/).
 
-### Measure format 
+### Measure format
 
 Here is an example of a valid measure:
 ```
 {
   "measureName": "konnector-event-daily",
   "value": 1,
-  "startDate": "2021-05-04",
+  "startDate": "2022-01-01",
   "createdBy": "ecolyo",
   "group1": {
       "slug": "enedis"
@@ -79,7 +78,7 @@ Here is an example of a valid measure:
 The expected fields are the following:
 * `measureName`: {string} the name of the measure. It must match an existing measure name on the DACC server.
 * `value`: {number} the measured value. It can be 0 but never `null`.
-* `startDate`: {date} the starting date of the measure. The expected date format is `ISO 8601`. It must be set in relation with the `aggregationPeriod` for this measure: for example, if the `aggregationPeriod` is `day`, then `start_date` must represent the measured day, e.g. `2021-05-01`.
+* `startDate`: {date} the starting date of the measure. The expected date format is `ISO 8601`. It must be set in relation with the `aggregationPeriod` for this measure: for example, if the `aggregationPeriod` is `day`, then `start_date` must represent the measured day, e.g. `2022-01-01`.
 * `createdBy`: {string} the application that produced the measure.
 * `group1`: {object} The first group. Groups are used to combinate measures depending on attributes specified in the measure definition. Each group is a key-value entry, where the key is set in the measure definition. Here, the key must match the `group1_key` of the associated measure definition.
 * `group2`: {object} The second group. Its key must match the `group2_key` of the associated measure definition.
@@ -88,7 +87,7 @@ The expected fields are the following:
 
 ## Measure definition
 
-A measure is defined by the following fields: 
+A measure is defined by the following fields:
 * `name`: {string} the name of the measure. It must indicate what is measured and should include the aggregation period, if relevant, e.g. "connexion-daily", "konnector-error-monthly", etc.
 * `org`: {string} the organization defining this measure.
 * `group1_key`: {string} the first grouping key.
@@ -97,63 +96,79 @@ A measure is defined by the following fields:
 * `description`: {string} a human-readable description of the measure.
 * `aggregation_period`: {string} the period on which is computed the raw measure on the app side. It can be `day`, `week`, `month`.
 * `execution_frequency`: {string} the frequency on which the measure should be computed on the DACC. It can be `day`, `week`, `month`.
-* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results) 
-* `access_app`: {boolean} whether or not the result shouold be accessible from the producing app.
-* `access_public`: {boolean} whether or not the result should be accessible by any requesting organization.
+* `aggregation_threshold`: {number} the minimal threshold contribution above which one can access an aggregated result. This threshold must be a trade-off between security (too low would put user privacy at risk) and usability (too high would make difficult to get results).
+* `access_app`: {boolean} whether or not the result shouold be accessible from the producing app. Default is false.
+* `access_public`: {boolean} whether or not the result should be accessible by any requesting organization. Default is false.
+* `with_quartiles`: {boolean} when set to true, median, first quartile and third quartile will be computed alongside the other aggregates.
+* `max_days_to_update_quartile`: {number} the maximum days a quartile can be safely updated after its first creation. Below this threshold, the measures cannot be purged. Default is 100.
 
 Note there is no public API to insert a new definition. For security purposes, Cozy restricts this possibility and carefully evaluates each new measure definition to accept it or not.
+
+## Aggregates functions
+
+The available aggregates functions are the following:
+- `sum`: the sum of values
+- `count`: the number of values
+- `count_not_zero`: the number of values different from zero.
+- `min`: the minimum value
+- `max`: the maximum value
+- `avg`: the average of values
+- `std`: the standard deviation
+- `median`: the median of values. Only computed when `with_quartiles` is set in measure definition.
+- `first_quartile`: The first quartile of values. Only computed when `with_quartiles` is set in measure definition.
+- `third_quartile`: the third quartile of values. Only computed when `with_quartiles` is set in measure definition.
+
 
 ## Query an aggregated result
 
 You can query the `/aggregate` endpoint to get an aggregated result:
 
 ```
-$ curl -X GET -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/aggregate -d '{"measureName": "connection-count-daily", "startDate": "2021-05-01", "endDate": "2021-05-02"}'
+$ curl -X GET -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' http://localhost:5000/aggregate -d '{"measureName": "connection-count-daily", "startDate": "2022-01-01", "endDate": "2022-01-02"}'
 HTTP/1.0 200 OK
 Content-Type: application/json
 Content-Length: 12
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 14:22:21 GMT
 
 [
   {
-    "avg": 54.39, 
-    "count": 173, 
-    "countNotZero": 172, 
-    "createdBy": "ecolyo", 
+    "avg": 54.39,
+    "count": 173,
+    "countNotZero": 172,
+    "createdBy": "ecolyo",
     "group1": {
       "device": "desktop"
-    }, 
-    "max": 100.0, 
-    "measureName": "connection-count-daily", 
-    "min": 0.0, 
-    "startDate": "2021-05-01T00:00:00", 
-    "std": 28.94, 
+    },
+    "max": 100.0,
+    "measureName": "connection-count-daily",
+    "min": 0.0,
+    "startDate": "2022-01-01T00:00:00",
+    "std": 28.94,
     "sum": 9410.0
   },
   {
-    "avg": 53.04, 
-    "count": 26, 
-    "countNotZero": 26, 
-    "createdBy": "ecolyo", 
+    "avg": 53.04,
+    "count": 26,
+    "countNotZero": 26,
+    "createdBy": "ecolyo",
     "group1": {
       "device": "mobile"
-    }, 
-    "max": 94.0, 
-    "measureName": "connection-count-daily", 
-    "min": 3.0, 
-    "startDate": "2021-05-01T00:00:00", 
-    "std": 29.33, 
+    },
+    "max": 94.0,
+    "measureName": "connection-count-daily",
+    "min": 3.0,
+    "startDate": "2022-01-02T00:00:00",
+    "std": 29.33,
     "sum": 1379.0
   }
 ]
- 
+
 ```
 
 The expected query parameters are the following:
 * `measureName`: {string} the name of the measure. It must match an existing measure definition.
 * `startDate`: {date} the start date of the requested time period.
-* `endDate`: {date} the end date of the requested time period. 
+* `endDate`: {date} the end date of the requested time period.
 * `createdBy`: {string} [optionnal] the name of the application that produced the measure.
 
 ℹ️ `startDate` is inclusive, while `endDate` is exclusive. In other words, `startDate >= {results} < endDate`
@@ -258,7 +273,6 @@ HTTP/1.0 200 OK
 Content-Type: application/json
 Content-Length: 63
 Server: Werkzeug/2.0.1 Python/3.8.10
-Date: Sun, 30 May 2021 13:22:24 GMT
 
 {
   "db": {
@@ -290,15 +304,65 @@ flask token delete-org # Remove an organization
 
 When the database needs a migration, i.e. when the structure changed, for instance a new column, one needs to run `flask db migrate`. A migration script is then generated, that must be commited.
 
-It is then possible to run `flask db update` on the DACC server to automatically handle the database migration. 
+It is then possible to run `flask db upgrade` on the DACC server to automatically handle the database migration.
+
+⚠️ Note the materialized views cannot be manually altered. Thus, a migration on the view will trigger a recreation from scratch, which can take some time depending on the volume.
+Hence, the migration script might include the following steps to prevent any service interruption:
+```
+CREATE MATERIALIZED VIEW tmp AS ...;
+DROP MATERIALIZED VIEW myView;
+ALTER MATERIALIZED VIEW tmp RENAME TO myView;
+```
 
 ## Insert definitions
 
-To insert measure definitions, simply run `flask insert-definitions-json`.
-By default, it takes the JSON file stored in `dacc/assets/definitions.json`, containing all definitions.
+To insert measure definitions, simply copy `assets/definitions-example.json`
+to a new file, adapt it to suit your needs and
+run `flask insert-definitions-json -f assets/yournewfile.json`.
 
-For each definition found, it either inserts it, if it does not exist, or updates it otherwise.
+Without the `-f` flag to specify a specific definition file, it takes the
+JSON file stored in `dacc/assets/definitions.json` by default.
 
+For each definition found, it either inserts it, if it does not exist,
+or updates it otherwise.
+
+## Definition removal
+
+Definitions removed from file are not removed from database by
+`insert-definitions-json`. Currently, definitions should be removed by
+hand from database. A future cli command could be added to remove
+definitions.
+
+## Measures purge
+
+Raw measures can be purged with the commands:
+
+-  `flask purge measure <measure_name>`.
+-  `flask purge all-measures`.
+
+By default, measures oldest than 90 days will be deleted. 
+A `-d days` option can be passed to specify the minimal age of a measure to be deleted, expressed in number of days, starting from the current date.
+
+
+Note the measures involving quartiles cannot be purged as easily as the others, because quartiles cannot be partitioned: one needs all the measures to compute the quartile. Thus, the `max_days_to_update_quartile` is used to determine if the measures can be removed.
+
+When measures are purged, the impacted aggregate are updated to save the purge date in the `last_raw_measures_purged` column.
+
+## Wildcard aggregates
+
+It is possible to manually generate wildcard aggregates:
+
+`flask compute-wildcard-aggregate <measure_name> <group1,group2> --from-date 2021-01-01 --to-date 2022-01-01`
+
+A wildcard aggregate will consider all the measures for any group value, if the group is specified.
+
+For instance, let us consider an `electric-consumption` measure with `group1_key: heating_type` and `group2_key: surface`. If you want to aggreagte all the measures for any surface, you can run: 
+
+`flask compute-wildcard-aggregate electric-consumption group2`
+
+This will produce aggregates with `group2: *` for each heating type.
+
+ℹ️ You can specify a date range with `--from-date` and `--to-date` to restrict the measures based on the `RawMeasure.last_updated` column. The default values are respectively `1970-01-01` and the current date.
 
 ## Logging
 
@@ -310,9 +374,9 @@ logging:
   logger_criticity: info
 ```
 
-## Community
+# Community
 
-### What's Cozy?
+## What's Cozy?
 
 <div align="center">
   <a href="https://cozy.io">
@@ -338,7 +402,7 @@ You can reach the Cozy Community by:
 - Say Hi! on [Twitter][twitter]
 
 
-## License
+# License
 
 DACC is developed by Cozy and distributed under the [AGPL v3 license][agpl-3.0].
 

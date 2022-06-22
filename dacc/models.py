@@ -4,6 +4,22 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, text
 from sqlalchemy.schema import DropTable
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy import inspect
+from sqlalchemy.engine.row import Row
+from datetime import timedelta
+
+
+def tuple_as_dict(obj):
+    if type(obj) == dict:
+        return obj
+    if type(obj) == Row:
+        return obj._asdict()
+    return {
+        # The object is an ORM model
+        c.key: getattr(obj, c.key)
+        for c in inspect(obj).mapper.column_attrs
+    }
 
 
 @compiles(DropTable, "postgresql")
@@ -30,19 +46,23 @@ class RawMeasure(db.Model):
     measure_name = db.Column(db.String(100))
     value = db.Column(db.Numeric(precision=12, scale=2), default=1)
     start_date = db.Column(db.TIMESTAMP)
-    last_updated = db.Column(db.DateTime, default=func.now())
+    last_updated = db.Column(
+        db.DateTime, default=func.now()
+    )  # TODO: a trigger should update this field
     aggregation_period = db.Column(db.String(100))
     created_by = db.Column(db.String(100))
     group1 = db.Column(JSONB(none_as_null=True))
     group2 = db.Column(JSONB(none_as_null=True))
     group3 = db.Column(JSONB(none_as_null=True))
 
-    # TODO: indexing on last_updated might be good
+    db.Index("idx_by_mname_and_lupdated", measure_name, last_updated)
+
     @staticmethod
     def query_by_name(measure_name):
         return (
             db.session.query(
                 RawMeasure.created_by,
+                RawMeasure.last_updated,
                 RawMeasure.start_date,
                 RawMeasure.group1,
                 RawMeasure.group2,
@@ -55,7 +75,7 @@ class RawMeasure(db.Model):
         )
 
     @staticmethod
-    def query_most_recent_date(measure_name, from_date):
+    def query_most_recent_last_updated(measure_name, from_date):
         return (
             db.session.query(RawMeasure.last_updated)
             .filter(
@@ -65,6 +85,40 @@ class RawMeasure(db.Model):
             .order_by(RawMeasure.last_updated.desc())
             .first()
         )
+
+    @hybrid_method
+    def max_retention_date(self, max_days):
+        return self.last_updated + timedelta(days=max_days)
+
+
+class RefusedRawMeasure(db.Model):
+    # TODO: mutualize with RawMeasure?
+    id = db.Column(db.Integer, primary_key=True)
+    measure_name = db.Column(db.String(100))
+    value = db.Column(db.Numeric(precision=12, scale=2), default=1)
+    start_date = db.Column(db.TIMESTAMP)
+    last_updated = db.Column(db.DateTime, default=func.now())
+    aggregation_period = db.Column(db.String(100))
+    created_by = db.Column(db.String(100))
+    group1 = db.Column(JSONB(none_as_null=True))
+    group2 = db.Column(JSONB(none_as_null=True))
+    group3 = db.Column(JSONB(none_as_null=True))
+    rejected_date = db.Column(db.DateTime, default=func.now())
+
+    @staticmethod
+    def insert_from_raw_measure(raw_measure: RawMeasure):
+        refused_rm = RefusedRawMeasure(
+            measure_name=raw_measure.measure_name,
+            value=raw_measure.value,
+            start_date=raw_measure.start_date,
+            last_updated=raw_measure.last_updated,
+            aggregation_period=raw_measure.aggregation_period,
+            created_by=raw_measure.created_by,
+            group1=raw_measure.group1,
+            group2=raw_measure.group2,
+            group3=raw_measure.group3,
+        )
+        db.session.add(refused_rm)
 
 
 class MeasureDefinition(db.Model):
@@ -83,6 +137,10 @@ class MeasureDefinition(db.Model):
     aggregation_threshold = db.Column(db.Integer, server_default=text("5"))
     access_app = db.Column(db.Boolean, server_default=text("false"))
     access_public = db.Column(db.Boolean, server_default=text("false"))
+    with_quartiles = db.Column(db.Boolean, server_default=text("false"))
+    max_days_to_update_quartile = db.Column(
+        db.Integer, server_default=text("100")
+    )
     aggregation_date = relationship(
         "AggregationDate",
         uselist=False,
@@ -135,7 +193,10 @@ class Aggregation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     measure_name = db.Column(db.String(100))
     start_date = db.Column(db.TIMESTAMP)
-    last_updated = db.Column(db.DateTime, default=func.now())
+    last_updated = db.Column(
+        db.DateTime, default=func.now()
+    )  # TODO: a trigger should update this field
+    last_raw_measures_purged = db.Column(db.TIMESTAMP)
     created_by = db.Column(db.String(100))
     group1 = db.Column(JSONB(none_as_null=True))
     group2 = db.Column(JSONB(none_as_null=True))
@@ -147,20 +208,51 @@ class Aggregation(db.Model):
     max = db.Column(db.Numeric(precision=12, scale=2))
     avg = db.Column(db.Numeric(precision=12, scale=2))
     std = db.Column(db.Numeric(precision=12, scale=2), default=0)
+    median = db.Column(db.Numeric(precision=12, scale=2))
+    first_quartile = db.Column(db.Numeric(precision=12, scale=2))
+    third_quartile = db.Column(db.Numeric(precision=12, scale=2))
+
+    db.Index(
+        "idx_by_mname_and_sdate_and_created_by_and_groups",
+        measure_name,
+        start_date,
+        created_by,
+        group1,
+        group2,
+        group3,
+    )
+
+    db.Index(
+        "idx_by_mname_and_sdate",
+        measure_name,
+        start_date,
+    )
 
     @staticmethod
     def query_aggregate_by_measure(measure_name, m):
+        m = tuple_as_dict(m)
         return (
             db.session.query(Aggregation)
             .filter(
                 Aggregation.measure_name == measure_name,
-                Aggregation.start_date == m.start_date,
-                Aggregation.created_by == m.created_by,
-                Aggregation.group1 == m.group1,
-                Aggregation.group2 == m.group2,
-                Aggregation.group3 == m.group3,
+                Aggregation.start_date == m["start_date"],
+                Aggregation.created_by == m["created_by"],
+                Aggregation.group1 == m["group1"],
+                Aggregation.group2 == m["group2"],
+                Aggregation.group3 == m["group3"],
             )
             .first()
+        )
+
+    @staticmethod
+    def query_aggregates_by_measure_name_from_date(measure_name, date):
+        return (
+            db.session.query(Aggregation)
+            .filter(
+                Aggregation.measure_name == measure_name,
+                Aggregation.start_date >= date,
+            )
+            .all()
         )
 
     @staticmethod
@@ -183,35 +275,3 @@ class Aggregation(db.Model):
             .order_by(Aggregation.start_date)
             .all()
         )
-
-
-class FilteredAggregation:
-    @staticmethod
-    def create():
-        select_query_sql = """
-                            SELECT id, measure_name, start_date, created_by,
-                            group1::text, group2::text, group3::text,
-                            sum, count, count_not_zero, min, max, avg, std,
-                            last_updated
-                            FROM aggregation as agg
-                            WHERE agg.count >= 
-                                (SELECT m.aggregation_threshold
-                                FROM measure_definition as m 
-                                WHERE m.name = agg.measure_name)
-                            """
-        create_view_sql = (
-            "CREATE MATERIALIZED VIEW filtered_aggregation AS ({})".format(
-                select_query_sql
-            )
-        )
-
-        stmt = text(create_view_sql)
-        db.session.execute(stmt)
-        db.session.commit()
-
-    @staticmethod
-    def udpate():
-        query_sql = "REFRESH MATERIALIZED VIEW filtered_aggregation;"
-        stmt = text(query_sql)
-        db.session.execute(stmt)
-        db.session.commit()
